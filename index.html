@@ -21,8 +21,10 @@ textarea{width:100%;min-height:110px}.tot{font-weight:700;margin:8px 0}
 </style></head><body>
 <div id="app"></div>
 <nav><button data-v="series">Séries</button><button data-v="all">Soltas</button><button data-v="sell">A vender</button><button data-v="log">Histórico</button><button data-v="cfg">Config</button></nav>
-<div id="cam"><small style="position:absolute;top:6px;left:8px;color:#fff;z-index:2">v11</small><video id="vid" playsinline muted></video><div style="display:flex;gap:8px;padding:8px 8px calc(env(safe-area-inset-bottom,0px) + 28px);flex-wrap:wrap"><small style="flex:1 1 100%;color:#9ca3af">Afasta o telemóvel uns 20–25 cm e toca no vídeo para focar.</small><button id="picbtn" class="p" style="flex:1 1 100%">📸 Capturar código</button><button id="galbtn" style="flex:1 1 100%">🖼 Escolher foto da galeria</button><button id="typ" style="flex:1">⌨ Escrever</button><button id="stop" style="flex:1">Cancelar</button></div></div>
+<div id="cam"><small style="position:absolute;top:6px;left:8px;color:#fff;z-index:2">v12</small><video id="vid" playsinline muted></video><div style="display:flex;gap:8px;padding:8px 8px calc(env(safe-area-inset-bottom,0px) + 28px);flex-wrap:wrap"><small style="flex:1 1 100%;color:#9ca3af">Afasta o telemóvel uns 20–25 cm e toca no vídeo para focar.</small><button id="picbtn" class="p" style="flex:1 1 100%">📸 Capturar código</button><button id="galbtn" style="flex:1 1 100%">🖼 Escolher foto da galeria</button><button id="typ" style="flex:1">⌨ Escrever</button><button id="stop" style="flex:1">Cancelar</button></div></div>
 <input type="file" id="gal" accept="image/*" hidden>
+<input type="file" id="cap" accept="image/*" capture="environment" hidden>
+<input type="file" id="gal2" accept="image/*" hidden>
 <input type="file" id="file" accept=".xlsx,.xls" hidden>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -61,14 +63,14 @@ function list(){
 function page(){
   if(view=='login')return `<div class=box><h2>Entrar</h2><input id=em type=email placeholder="Email"><input id=pw type=password placeholder="Palavra-passe"><button class=p data-a=login>Entrar</button></div>`;
   const all=Object.entries(items);
-  if(view=='cfg')return `<div class=box><h2>Configuração <small>v11</small></h2>
+  if(view=='cfg')return `<div class=box><h2>Configuração <small>v12</small></h2>
   <small>Config Firebase (cola o firebaseConfig)</small><textarea id=fb>${esc(LS('fb'))}</textarea>
   <small>Chave API Rebrickable</small><input id=rb value="${esc(LS('rb'))}">
   <button class=p data-a=savecfg>Guardar</button><hr style="width:100%;border-color:#374151">
   <button data-a=exp>⬇ Exportar Excel</button><button data-a=imp>⬆ Importar Excel</button><button data-a=logout>Terminar sessão</button></div>`;
   if(view=='series'){
     const S=all.filter(([i,x])=>x.t=='s').sort((a,b)=>String(a[1].set).localeCompare(b[1].set,0,{numeric:true}));
-    return `<div class=bar><button class=p data-a=scan>📷 Ler código</button><button data-a=add>+ Série</button></div><div class=g>`+
+    return `<div class=bar><button class=p data-a=photo>📷 Foto ao código</button><button data-a=gallery>🖼 Galeria</button><button data-a=add>+ Série</button><button data-a=scan>Câmara ao vivo</button></div><div class=g>`+
     (S.map(([i,x])=>{const n=all.filter(([j,y])=>y.t=='f'&&y.set==x.set).reduce((s,[j,y])=>s+(y.have||0),0);
       return `<button class=card data-a=open data-set="${esc(x.set)}"><img src="${esc(x.img)}" onerror="this.style.visibility='hidden'"><b>${esc(x.name)}</b><small>${esc(x.set)} · completas ${x.have||0} · soltas ${n}</small></button>`}).join('')||(loaded?'<p>Sem séries. Carrega em + Série.</p>':'<p>A carregar…</p>'))+`</div>`;
   }
@@ -142,8 +144,9 @@ async function readCode(){
   const code=await done;
   clearInterval(t);try{zx&&zx.reset()}catch(e){}st.getTracks().forEach(x=>x.stop());cam.style.display='none';return code;
 }
-async function scan(){
-  const code=((await readCode())||'').trim();
+async function scan(){const c=((await readCode())||'').trim();if(c)await handleCode(c)}
+async function fromFile(f){const c=await decodeFile(f);if(c)return handleCode(c);const m=prompt('Não consegui ler o código na foto. Escreve os 13 dígitos por baixo das barras (ou cancela):');if(m)handleCode(m.trim())}
+async function handleCode(code){
   if(!code)return;
   let set=codes[code];const isNew=!set;
   if(!set){
@@ -176,7 +179,7 @@ async function imp(f){
 const A={
   st:d=>upd(d.id,d.f,+d.d),
   open:d=>{cur=d.set;view='detail';render();scrollTo(0,0)},
-  pr:()=>{},bu:()=>{},scan,add:addSeries,manual,exp,
+  pr:()=>{},bu:()=>{},photo:()=>$('#cap').click(),gallery:()=>$('#gal2').click(),scan,add:addSeries,manual,exp,
   imp:()=>$('#file').click(),
   del:d=>{if(confirm('Apagar este item?'))col().doc(d.id).delete()},
   login:()=>firebase.auth().signInWithEmailAndPassword($('#em').value.trim(),$('#pw').value).catch(e=>alert(e.message)),
@@ -190,6 +193,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-a],[data-v
 document.addEventListener('change',e=>{const d=e.target.dataset;if(d&&(d.a=='pr'||d.a=='bu')){const f=d.a=='pr'?'price':'buy',v=+e.target.value||0;col().doc(d.id).update({[f]:v});log(d.id,f,v)}});
 document.addEventListener('input',e=>{if(e.target.id=='q'){q=e.target.value;$('#list').innerHTML=list()}});
 $('#file').onchange=e=>{if(e.target.files[0])imp(e.target.files[0]);e.target.value=''};
+['cap','gal2'].forEach(i=>$('#'+i).onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)fromFile(f)});
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js');
 start();
 </script></body></html>
