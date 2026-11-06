@@ -21,8 +21,7 @@ textarea{width:100%;min-height:110px}.tot{font-weight:700;margin:8px 0}
 </style></head><body>
 <div id="app"></div>
 <nav><button data-v="series">Séries</button><button data-v="all">Soltas</button><button data-v="sell">A vender</button><button data-v="log">Histórico</button><button data-v="cfg">Config</button></nav>
-<div id="cam"><small style="position:absolute;top:6px;left:8px;color:#fff;z-index:2">v9</small><video id="vid" playsinline muted></video><div style="display:flex;gap:8px;padding:8px 8px calc(env(safe-area-inset-bottom,0px) + 28px);flex-wrap:wrap"><button id="picbtn" class="p" style="flex:1 1 100%">📸 Tirar foto ao código</button><button id="typ" style="flex:1">⌨ Escrever</button><button id="stop" style="flex:1">Cancelar</button></div></div>
-<input type="file" id="pic" accept="image/*" capture="environment" hidden>
+<div id="cam"><small style="position:absolute;top:6px;left:8px;color:#fff;z-index:2">v10</small><video id="vid" playsinline muted></video><div style="display:flex;gap:8px;padding:8px 8px calc(env(safe-area-inset-bottom,0px) + 28px);flex-wrap:wrap"><button id="picbtn" class="p" style="flex:1 1 100%">📸 Capturar código</button><button id="typ" style="flex:1">⌨ Escrever</button><button id="stop" style="flex:1">Cancelar</button></div></div>
 <input type="file" id="file" accept=".xlsx,.xls" hidden>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -32,7 +31,7 @@ textarea{width:100%;min-height:110px}.tot{font-weight:700;margin:8px 0}
 <script>
 const $=s=>document.querySelector(s),LS=k=>localStorage.getItem(k)||'';
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-let db,items={},codes={'5702015594660':'71013'},logs=[],view='series',cur=null,q='';
+let db,items={},loaded=false,codes={'5702015594660':'71013'},logs=[],view='series',cur=null,q='';
 const col=()=>db.collection('items');
 function start(){
   let c;try{c=JSON.parse(LS('fb'))}catch(e){}
@@ -42,7 +41,7 @@ function start(){
     if(!u){view='login';return render()}
     db=firebase.firestore();db.enablePersistence().catch(()=>{});
     if(view=='login'||view=='cfg')view='series';
-    col().onSnapshot(s=>{s.docChanges().forEach(h=>h.type=='removed'?delete items[h.doc.id]:items[h.doc.id]=h.doc.data());render()});
+    col().onSnapshot(s=>{loaded=true;s.docChanges().forEach(h=>h.type=='removed'?delete items[h.doc.id]:items[h.doc.id]=h.doc.data());render()},e=>alert('Erro na base de dados: '+e.code+'\n'+e.message));
     db.collection('codes').onSnapshot(s=>s.forEach(d=>codes[d.id]=d.data().set));
     db.collection('log').orderBy('ts','desc').limit(100).onSnapshot(s=>{logs=s.docs.map(d=>d.data());if(view=='log')render()});
   });
@@ -61,7 +60,7 @@ function list(){
 function page(){
   if(view=='login')return `<div class=box><h2>Entrar</h2><input id=em type=email placeholder="Email"><input id=pw type=password placeholder="Palavra-passe"><button class=p data-a=login>Entrar</button></div>`;
   const all=Object.entries(items);
-  if(view=='cfg')return `<div class=box><h2>Configuração <small>v9</small></h2>
+  if(view=='cfg')return `<div class=box><h2>Configuração <small>v10</small></h2>
   <small>Config Firebase (cola o firebaseConfig)</small><textarea id=fb>${esc(LS('fb'))}</textarea>
   <small>Chave API Rebrickable</small><input id=rb value="${esc(LS('rb'))}">
   <button class=p data-a=savecfg>Guardar</button><hr style="width:100%;border-color:#374151">
@@ -70,7 +69,7 @@ function page(){
     const S=all.filter(([i,x])=>x.t=='s').sort((a,b)=>String(a[1].set).localeCompare(b[1].set,0,{numeric:true}));
     return `<div class=bar><button class=p data-a=scan>📷 Ler código</button><button data-a=add>+ Série</button></div><div class=g>`+
     (S.map(([i,x])=>{const n=all.filter(([j,y])=>y.t=='f'&&y.set==x.set).reduce((s,[j,y])=>s+(y.have||0),0);
-      return `<button class=card data-a=open data-set="${esc(x.set)}"><img src="${esc(x.img)}" onerror="this.style.visibility='hidden'"><b>${esc(x.name)}</b><small>${esc(x.set)} · completas ${x.have||0} · soltas ${n}</small></button>`}).join('')||'<p>Sem séries. Carrega em + Série.</p>')+`</div>`;
+      return `<button class=card data-a=open data-set="${esc(x.set)}"><img src="${esc(x.img)}" onerror="this.style.visibility='hidden'"><b>${esc(x.name)}</b><small>${esc(x.set)} · completas ${x.have||0} · soltas ${n}</small></button>`}).join('')||(loaded?'<p>Sem séries. Carrega em + Série.</p>':'<p>A carregar…</p>'))+`</div>`;
   }
   if(view=='detail'){const s=items['S'+cur];if(!s)return`<div class=bar><button data-v=series>← Voltar</button></div><p>Série não encontrada.</p>`;
     return `<div class=bar><button data-v=series>← Voltar</button><button data-a=manual>+ Minifigura manual</button></div>`+row('S'+cur,s,s.name+' (série completa)')+figs(x=>x.set==cur).map(([i,x])=>row(i,x)).join('');}
@@ -125,8 +124,12 @@ async function readCode(){
   cam.style.display='flex';v.srcObject=st;await v.play();
   const done=new Promise(x=>res=x);
   $('#stop').onclick=()=>res(null);$('#typ').onclick=()=>res(prompt('Escreve o código de barras:'));
-  $('#picbtn').onclick=()=>$('#pic').click();
-  $('#pic').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const c=await decodeFile(f);if(c)res(c);else alert('Não consegui ler a foto. Aproxima só o código de barras, ou usa Escrever.')};
+  $('#picbtn').onclick=async()=>{try{
+    const tr=st.getVideoTracks()[0];let blob;
+    if('ImageCapture' in window){try{blob=await new ImageCapture(tr).takePhoto()}catch(e){}}
+    if(!blob){const c=document.createElement('canvas');c.width=v.videoWidth;c.height=v.videoHeight;c.getContext('2d').drawImage(v,0,0);blob=await new Promise(x=>c.toBlob(x,'image/jpeg',.95))}
+    const code=await decodeFile(blob);if(code)res(code);else alert('Não consegui ler o código. Aproxima só o código de barras e tenta de novo, ou usa Escrever.');
+  }catch(e){alert('Erro ao capturar: '+e.name)}};
   let d=null,zx=null;
   if('BarcodeDetector' in window)try{d=new BarcodeDetector({formats:['ean_13']})}catch(e){}
   const feed=c=>{if(ok(c))res(c)};
