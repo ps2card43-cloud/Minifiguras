@@ -21,16 +21,17 @@ textarea{width:100%;min-height:110px}.tot{font-weight:700;margin:8px 0}
 </style></head><body>
 <div id="app"></div>
 <nav><button data-v="series">Séries</button><button data-v="all">Soltas</button><button data-v="sell">A vender</button><button data-v="log">Histórico</button><button data-v="cfg">Config</button></nav>
-<div id="cam"><video id="vid" playsinline muted></video><button id="stop" class="p">Cancelar</button></div>
+<div id="cam"><video id="vid" playsinline muted></video><div style="display:flex;gap:8px;padding:8px"><button id="typ" style="flex:1">⌨ Escrever código</button><button id="stop" class="p" style="flex:1">Cancelar</button></div></div>
 <input type="file" id="file" accept=".xlsx,.xls" hidden>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 const $=s=>document.querySelector(s),LS=k=>localStorage.getItem(k)||'';
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-let db,items={},codes={},logs=[],view='series',cur=null,q='';
+let db,items={},codes={'5702015594660':'71013'},logs=[],view='series',cur=null,q='';
 const col=()=>db.collection('items');
 function start(){
   let c;try{c=JSON.parse(LS('fb'))}catch(e){}
@@ -107,17 +108,22 @@ async function addSeries(){
     await b.commit();alert(`Série "${name}" pronta com ${fg.length} minifiguras.`);
   }catch(e){alert('Não consegui obter a série. Confirma o número (só os 5 dígitos, ex: 71045) e a chave Rebrickable.')}
 }
+async function readCode(){
+  const cam=$('#cam'),v=$('#vid');let st,res;
+  try{st=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}}})}
+  catch(e){alert('Sem acesso à câmara ('+e.name+'). No Chrome, permite a câmara para este site.');return prompt('Escreve o código de barras:')}
+  cam.style.display='flex';v.srcObject=st;await v.play();
+  const done=new Promise(x=>res=x);
+  $('#stop').onclick=()=>res(null);$('#typ').onclick=()=>res(prompt('Escreve o código de barras:'));
+  let d=null,zx=null;
+  if('BarcodeDetector' in window)try{d=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128']})}catch(e){}
+  const t=setInterval(async()=>{if(!d)return;try{const x=await d.detect(v);if(x[0])res(x[0].rawValue)}catch(e){}},250);
+  if(!d&&window.ZXing){try{zx=new ZXing.BrowserMultiFormatReader();zx.decodeFromVideoElement(v,x=>{if(x)res(x.getText())})}catch(e){}}
+  const code=await done;
+  clearInterval(t);try{zx&&zx.reset()}catch(e){}st.getTracks().forEach(x=>x.stop());cam.style.display='none';return code;
+}
 async function scan(){
-  let code;
-  if('BarcodeDetector' in window){
-    try{
-      const d=new BarcodeDetector(),v=$('#vid'),st=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
-      $('#cam').style.display='flex';v.srcObject=st;await v.play();
-      code=await new Promise(res=>{const t=setInterval(async()=>{try{const r=await d.detect(v);if(r[0]){clearInterval(t);res(r[0].rawValue)}}catch(e){}},300);
-        $('#stop').onclick=()=>{clearInterval(t);res(null)}});
-      st.getTracks().forEach(t=>t.stop());$('#cam').style.display='none';
-    }catch(e){$('#cam').style.display='none';code=prompt('Código de barras:')}
-  }else code=prompt('Código de barras:');
+  const code=((await readCode())||'').trim();
   if(!code)return;
   let set=codes[code];
   if(!set){
