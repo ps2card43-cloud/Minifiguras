@@ -89,17 +89,23 @@ const who=()=>((firebase.auth().currentUser||{}).email||'?').split('@')[0];
 const log=(id,f,d)=>db.collection('log').add({u:who(),n:items[id].name,f,d,ts:Date.now()});
 const upd=(id,f,d)=>{const v=Math.max(0,(items[id][f]||0)+d);if(v==(items[id][f]||0))return;col().doc(id).update({[f]:v});log(id,f,v-(items[id][f]||0))};
 async function addSeries(){
-  const n=(prompt('Número do set da série (ex: 71045)')||'').trim();if(!n)return;
+  const n=(prompt('Número da série (ex: 71045)')||'').trim().split('-')[0];if(!n)return;
   const key=LS('rb');if(!key)return alert('Põe a chave Rebrickable na Config.');
-  const H={headers:{Authorization:'key '+key}},sn=n+'-1';
   try{
-    const s=await(await fetch(`https://rebrickable.com/api/v3/lego/sets/${sn}/`,H)).json();
-    const m=await(await fetch(`https://rebrickable.com/api/v3/lego/sets/${sn}/minifigs/?page_size=50`,H)).json();
-    if(!s.name)throw 0;
-    const b=db.batch(),mk=(id,t,name,img)=>{if(!items[id])b.set(col().doc(id),{t,set:n,name,img:img||'',have:0,sell:0,price:0,buy:0})};
-    mk('S'+n,'s',s.name,s.set_img_url);(m.results||[]).forEach(f=>mk(`F${n}_${f.set_num}`,'f',f.set_name,f.set_img_url));
-    await b.commit();alert('Série adicionada: '+s.name+' ('+(m.results||[]).length+' minifiguras)');
-  }catch(e){alert('Não consegui obter a série. Confirma o número e a chave Rebrickable.')}
+    const r=await fetch(`https://rebrickable.com/api/v3/lego/sets/?search=${n}&page_size=200`,{headers:{Authorization:'key '+key}});
+    if(!r.ok)throw 0;
+    const all=((await r.json()).results||[]).filter(x=>x.set_num.startsWith(n+'-'));
+    const bad=/series|complete|sealed|box|random|bag|display/i;
+    const fg=all.filter(x=>!bad.test(x.name)),cov=all.find(x=>bad.test(x.name));
+    if(!fg.length)throw 0;
+    const name=prompt('Nome da série',`Série ${n}`);if(!name)return;
+    const img=(cov||fg[0]).set_img_url||'',b=db.batch(),ids=new Set();
+    items['S'+n]?b.update(col().doc('S'+n),{name,img}):b.set(col().doc('S'+n),{t:'s',set:n,name,img,have:0,sell:0,price:0,buy:0});
+    fg.forEach(x=>{const id=`F${n}_${x.set_num}`;ids.add(id);
+      if(!items[id])b.set(col().doc(id),{t:'f',set:n,name:x.name,img:x.set_img_url||'',have:0,sell:0,price:0,buy:0})});
+    Object.entries(items).filter(([i,x])=>x.t=='f'&&x.set==n&&!ids.has(i)&&!i.includes('_m')&&!(x.have||x.sell)).forEach(([i])=>b.delete(col().doc(i)));
+    await b.commit();alert(`Série "${name}" pronta com ${fg.length} minifiguras.`);
+  }catch(e){alert('Não consegui obter a série. Confirma o número (só os 5 dígitos, ex: 71045) e a chave Rebrickable.')}
 }
 async function scan(){
   let code;
