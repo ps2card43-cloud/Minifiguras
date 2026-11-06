@@ -1,2 +1,4 @@
-self.addEventListener('install',e=>{e.waitUntil(caches.open('mf1').then(c=>c.addAll(['./','index.html'])))});
-self.addEventListener('fetch',e=>{if(e.request.method!='GET')return;e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)))});
+self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open('mf8').then(c=>c.addAll(['./','index.html'])))});
+self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!='mf8').map(x=>caches.delete(x)))).then(()=>clients.claim()))});
+self.addEventListener('fetch',e=>{if(e.request.method!='GET')return;const same=new URL(e.request.url).origin==location.origin;
+e.respondWith((same?fetch(e.request.url,{cache:'no-cache'}):fetch(e.request)).catch(()=>caches.match(e.request)))});

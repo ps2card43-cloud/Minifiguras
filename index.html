@@ -16,12 +16,12 @@ small{color:#9ca3af}.r{display:flex;align-items:center;gap:8px;flex-wrap:wrap;ba
 .c{display:flex;flex-direction:column;align-items:center}.c label{font-size:12px;color:#9ca3af}.s{display:flex;align-items:center;gap:6px}.s b{min-width:24px;text-align:center}
 .r input[type=number]{width:80px}.x{padding:6px 10px;min-height:36px}.box{display:flex;flex-direction:column;gap:10px;max-width:420px;margin:30px auto}
 nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:#0b1220;border-top:1px solid #374151}nav button{flex:1;border:0;border-radius:0;background:none}nav button.on{color:#f59e0b;font-weight:700}
-#cam{position:fixed;inset:0;height:100dvh;background:#000;z-index:9;display:none;flex-direction:column}#cam video{flex:1;width:100%;object-fit:cover}
+#cam{position:fixed;inset:0;height:100dvh;overflow:hidden;background:#000;z-index:9;display:none;flex-direction:column}#cam video{flex:none;height:45dvh;width:100%;object-fit:cover}
 textarea{width:100%;min-height:110px}.tot{font-weight:700;margin:8px 0}
 </style></head><body>
 <div id="app"></div>
 <nav><button data-v="series">Séries</button><button data-v="all">Soltas</button><button data-v="sell">A vender</button><button data-v="log">Histórico</button><button data-v="cfg">Config</button></nav>
-<div id="cam"><video id="vid" playsinline muted></video><div style="display:flex;gap:8px;padding:8px 8px calc(env(safe-area-inset-bottom,0px) + 28px);flex-wrap:wrap"><button id="picbtn" class="p" style="flex:1 1 100%">📸 Tirar foto ao código</button><button id="typ" style="flex:1">⌨ Escrever</button><button id="stop" style="flex:1">Cancelar</button></div></div>
+<div id="cam"><small style="position:absolute;top:6px;left:8px;color:#fff;z-index:2">v8</small><video id="vid" playsinline muted></video><div style="display:flex;gap:8px;padding:8px 8px calc(env(safe-area-inset-bottom,0px) + 28px);flex-wrap:wrap"><button id="picbtn" class="p" style="flex:1 1 100%">📸 Tirar foto ao código</button><button id="typ" style="flex:1">⌨ Escrever</button><button id="stop" style="flex:1">Cancelar</button></div></div>
 <input type="file" id="pic" accept="image/*" capture="environment" hidden>
 <input type="file" id="file" accept=".xlsx,.xls" hidden>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -61,7 +61,7 @@ function list(){
 function page(){
   if(view=='login')return `<div class=box><h2>Entrar</h2><input id=em type=email placeholder="Email"><input id=pw type=password placeholder="Palavra-passe"><button class=p data-a=login>Entrar</button></div>`;
   const all=Object.entries(items);
-  if(view=='cfg')return `<div class=box><h2>Configuração</h2>
+  if(view=='cfg')return `<div class=box><h2>Configuração <small>v8</small></h2>
   <small>Config Firebase (cola o firebaseConfig)</small><textarea id=fb>${esc(LS('fb'))}</textarea>
   <small>Chave API Rebrickable</small><input id=rb value="${esc(LS('rb'))}">
   <button class=p data-a=savecfg>Guardar</button><hr style="width:100%;border-color:#374151">
