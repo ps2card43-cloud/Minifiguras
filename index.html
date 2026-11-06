@@ -21,7 +21,7 @@ textarea{width:100%;min-height:110px}.tot{font-weight:700;margin:8px 0}
 </style></head><body>
 <div id="app"></div>
 <nav><button data-v="series">Séries</button><button data-v="all">Soltas</button><button data-v="sell">A vender</button><button data-v="log">Histórico</button><button data-v="cfg">Config</button></nav>
-<div id="cam"><small style="position:absolute;top:6px;left:8px;color:#fff;z-index:2">v12</small><video id="vid" playsinline muted></video><div style="display:flex;gap:8px;padding:8px 8px calc(env(safe-area-inset-bottom,0px) + 28px);flex-wrap:wrap"><small style="flex:1 1 100%;color:#9ca3af">Afasta o telemóvel uns 20–25 cm e toca no vídeo para focar.</small><button id="picbtn" class="p" style="flex:1 1 100%">📸 Capturar código</button><button id="galbtn" style="flex:1 1 100%">🖼 Escolher foto da galeria</button><button id="typ" style="flex:1">⌨ Escrever</button><button id="stop" style="flex:1">Cancelar</button></div></div>
+<div id="cam"><small style="position:absolute;top:6px;left:8px;color:#fff;z-index:2">v13</small><video id="vid" playsinline muted></video><div style="display:flex;gap:8px;padding:8px 8px calc(env(safe-area-inset-bottom,0px) + 28px);flex-wrap:wrap"><small style="flex:1 1 100%;color:#9ca3af">Afasta o telemóvel uns 20–25 cm e toca no vídeo para focar.</small><button id="picbtn" class="p" style="flex:1 1 100%">📸 Capturar código</button><button id="galbtn" style="flex:1 1 100%">🖼 Escolher foto da galeria</button><button id="typ" style="flex:1">⌨ Escrever</button><button id="stop" style="flex:1">Cancelar</button></div></div>
 <input type="file" id="gal" accept="image/*" hidden>
 <input type="file" id="cap" accept="image/*" capture="environment" hidden>
 <input type="file" id="gal2" accept="image/*" hidden>
@@ -34,17 +34,19 @@ textarea{width:100%;min-height:110px}.tot{font-weight:700;margin:8px 0}
 <script>
 const $=s=>document.querySelector(s),LS=k=>localStorage.getItem(k)||'';
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-let db,items={},loaded=false,codes={'5702015594660':'71013'},logs=[],view='series',cur=null,q='';
+const DEF={apiKey:"AIzaSyD35ofqfVPNtvUMHI60T5uV7IilNAd9uOk",authDomain:"minifiguras-728c0.firebaseapp.com",projectId:"minifiguras-728c0",storageBucket:"minifiguras-728c0.firebasestorage.app",messagingSenderId:"61068075012",appId:"1:61068075012:web:67abaee0fd578eef1d9551"};
+let rbShared='',db,items={},loaded=false,codes={'5702015594660':'71013'},logs=[],view='series',cur=null,q='';
 const col=()=>db.collection('items');
 function start(){
   let c;try{c=JSON.parse(LS('fb'))}catch(e){}
-  if(!c){view='cfg';return render()}
+  c=c||DEF;
   firebase.initializeApp(c);
   firebase.auth().onAuthStateChanged(u=>{
     if(!u){view='login';return render()}
     db=firebase.firestore();db.enablePersistence().catch(()=>{});
     if(view=='login'||view=='cfg')view='series';
     col().onSnapshot(s=>{loaded=true;s.docChanges().forEach(h=>h.type=='removed'?delete items[h.doc.id]:items[h.doc.id]=h.doc.data());render()},e=>alert('Erro na base de dados: '+e.code+'\n'+e.message));
+    db.collection('settings').doc('rb').onSnapshot(d=>{if(d.exists)rbShared=d.data().key||''});
     db.collection('codes').onSnapshot(s=>s.forEach(d=>codes[d.id]=d.data().set));
     db.collection('log').orderBy('ts','desc').limit(100).onSnapshot(s=>{logs=s.docs.map(d=>d.data());if(view=='log')render()});
   });
@@ -63,7 +65,7 @@ function list(){
 function page(){
   if(view=='login')return `<div class=box><h2>Entrar</h2><input id=em type=email placeholder="Email"><input id=pw type=password placeholder="Palavra-passe"><button class=p data-a=login>Entrar</button></div>`;
   const all=Object.entries(items);
-  if(view=='cfg')return `<div class=box><h2>Configuração <small>v12</small></h2>
+  if(view=='cfg')return `<div class=box><h2>Configuração <small>v13</small></h2>
   <small>Config Firebase (cola o firebaseConfig)</small><textarea id=fb>${esc(LS('fb'))}</textarea>
   <small>Chave API Rebrickable</small><input id=rb value="${esc(LS('rb'))}">
   <button class=p data-a=savecfg>Guardar</button><hr style="width:100%;border-color:#374151">
@@ -94,7 +96,7 @@ const log=(id,f,d)=>db.collection('log').add({u:who(),n:items[id].name,f,d,ts:Da
 const upd=(id,f,d)=>{const v=Math.max(0,(items[id][f]||0)+d);if(v==(items[id][f]||0))return;col().doc(id).update({[f]:v});log(id,f,v-(items[id][f]||0))};
 async function addSeries(pre){
   const n=String(typeof pre=='string'?pre:(prompt('Número da série (ex: 71045)')||'')).trim().split('-')[0];if(!n)return;
-  const key=LS('rb');if(!key)return alert('Põe a chave Rebrickable na Config.');
+  const key=LS('rb')||rbShared;if(!key)return alert('Põe a chave Rebrickable na Config.');
   try{
     const r=await fetch(`https://rebrickable.com/api/v3/lego/sets/?search=${n}&page_size=200`,{headers:{Authorization:'key '+key}});
     if(!r.ok)throw 0;
@@ -184,8 +186,11 @@ const A={
   del:d=>{if(confirm('Apagar este item?'))col().doc(d.id).delete()},
   login:()=>firebase.auth().signInWithEmailAndPassword($('#em').value.trim(),$('#pw').value).catch(e=>alert(e.message)),
   logout:()=>firebase.auth().signOut().then(()=>location.reload()),
-  savecfg:()=>{try{const t=$('#fb').value.trim().replace(/^[^{]*=/,'').replace(/;\s*$/,'');
-    if(t)localStorage.fb=JSON.stringify(new Function('return ('+t+')')());localStorage.rb=$('#rb').value.trim();location.reload()}catch(e){alert('Configuração inválida')}}
+  savecfg:async()=>{try{const t=$('#fb').value.trim().replace(/^[^{]*=/,'').replace(/;\s*$/,'');
+    if(t)localStorage.fb=JSON.stringify(new Function('return ('+t+')')());
+    const k=$('#rb').value.trim();localStorage.rb=k;
+    if(db&&k)await db.collection('settings').doc('rb').set({key:k}).catch(()=>{});
+    location.reload()}catch(e){alert('Configuração inválida')}}
 };
 document.addEventListener('click',e=>{const b=e.target.closest('[data-a],[data-v]');if(!b)return;const d=b.dataset;
   if(d.v){view=d.v;cur=null;q='';return render()}
