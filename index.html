@@ -29,7 +29,7 @@ body.cfgbg{background:linear-gradient(rgba(17,24,39,.15),rgba(17,24,39,.3)),url(
 <nav><button data-v="series">Sets</button><button data-v="all">Unidade</button><button data-v="sell">Venda</button><button data-v="log">Histórico</button><button data-v="cfg">Config</button></nav>
 <div id="chkdlg" style="display:none;position:fixed;inset:0;height:100dvh;background:rgba(0,0,0,.85);z-index:11;align-items:center;justify-content:center;padding:16px"><div style="background:#1f2937;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;width:100%;max-width:420px"><b>Check list deste set</b><select id="chksel"></select><button id="chkuse" class="p">Usar a do site</button><button id="chkgal">Escolher imagem da galeria</button><button id="chkx">Cancelar</button></div></div>
 <div id="zoom" style="display:none;position:fixed;inset:0;height:100dvh;background:rgba(0,0,0,.9);z-index:10;align-items:center;justify-content:center"><img id="zi" style="max-width:96%;max-height:92%;object-fit:contain;background:#fff;border-radius:12px"></div>
-<div id="cam"><small style="position:absolute;top:6px;left:8px;color:#fff;z-index:2">v33</small><video id="vid" playsinline muted></video><div style="display:flex;gap:8px;padding:8px 8px calc(env(safe-area-inset-bottom,0px) + 28px);flex-wrap:wrap"><small style="flex:1 1 100%;color:#9ca3af">Afasta o telemóvel uns 20–25 cm e toca no vídeo para focar.</small><button id="picbtn" class="p" style="flex:1 1 100%">📸 Capturar código</button><button id="galbtn" style="flex:1 1 100%">🖼 Escolher foto da galeria</button><button id="typ" style="flex:1">⌨ Escrever</button><button id="stop" style="flex:1">Cancelar</button></div></div>
+<div id="cam"><small style="position:absolute;top:6px;left:8px;color:#fff;z-index:2">v34</small><video id="vid" playsinline muted></video><div style="display:flex;gap:8px;padding:8px 8px calc(env(safe-area-inset-bottom,0px) + 28px);flex-wrap:wrap"><small style="flex:1 1 100%;color:#9ca3af">Afasta o telemóvel uns 20–25 cm e toca no vídeo para focar.</small><button id="picbtn" class="p" style="flex:1 1 100%">📸 Capturar código</button><button id="galbtn" style="flex:1 1 100%">🖼 Escolher foto da galeria</button><button id="typ" style="flex:1">⌨ Escrever</button><button id="stop" style="flex:1">Cancelar</button></div></div>
 <input type="file" id="gal" accept="image/*" hidden>
 <input type="file" id="chkin" accept="image/*" hidden>
 <input type="file" id="cap" accept="image/*" capture="environment" hidden>
@@ -70,7 +70,7 @@ async function fillBuy(sets){
   return {n,miss};
 }
 let rbShared='',db,items={},loaded=false,codes={'5702015594660':'71013'},logs=[],view='series',cur=null,q='',onlyFree=LS('free')=='1';
-const VER='v33';
+const VER='v34';
 let authed=null,sec=null,unsubI=null,unsubL=null,navSec=null;
 let tt;function toast(m,ok){let e=$('#toast');if(!e){e=document.createElement('div');e.id='toast';e.setAttribute('role','alert');document.body.appendChild(e)}e.textContent=m;e.style.background=ok?'#16a34a':'#ef4444';e.style.display='block';clearTimeout(tt);tt=setTimeout(()=>e.style.display='none',3500);try{navigator.vibrate&&navigator.vibrate(60)}catch(_){}}
 const col=()=>db.collection(sec=='lg'?'lego':'items');
@@ -117,15 +117,16 @@ const numOf=id=>{const m=String(id).match(/_\d+-(\d+)$/);return m?+m[1]:null};
 const ysfx=x=>{const y=x.year||(items['S'+x.set]||{}).year;return y?` (${y})`:''};
 const dot=x=>(x.have>0&&(x.sell||0)>=x.have)?'<span class=dot role=img aria-label="Todas à venda" title="Todas à venda"></span>':'';
 const nm=(id,x,label)=>{const s=label||((x.t=='f'&&numOf(id)!=null?numOf(id)+'. ':'')+x.name);return x.t=='b'&&!s.startsWith('📦')?'📦 '+s:s};
-const row=(id,x,label)=>`<div class=r><img tabindex=0 data-z="${esc(id)}" src="${esc(x.img)}" loading=lazy onerror="this.style.visibility='hidden'"><div class=n>${esc(nm(id,x,label))}${dot(x)}<br><small>${esc(x.set+ysfx(x))}</small></div>
+const row=(id,x,label)=>`<div class=r><img tabindex=0 data-z="${esc(id)}" src="${esc(x.img)}" loading=lazy onerror="this.style.visibility='hidden'"><div class=n>${esc(nm(id,x,label))}${dot(x)}<br><small>${esc(x.set+ysfx(x)+(x.theme?' · '+x.theme:''))}</small></div>
 <div class=c><label>Tenho</label>${stp(id,'have',x.have)}</div><div class=c><label>Vender</label>${stp(id,'sell',x.sell)}</div>
 <div class=c><label>Compra €</label><input type=number step=0.01 inputmode=decimal value="${x.buy||0}" data-a=bu data-id="${id}"></div>
 <div class=c><label>Venda €</label><input type=number step=0.01 inputmode=decimal value="${x.price||0}" data-a=pr data-id="${id}"></div>
-<button class=x data-a=del data-id="${id}">✕</button></div>`;
+<button class=x data-a=del data-id="${id}">✕</button>${x.t=='l'?`<div style="flex:1 1 100%;display:flex;gap:8px"><input data-a=bx data-id="${id}" placeholder="Caixa" aria-label="Caixa" value="${esc(x.box||'')}" style="width:110px"><input data-a=lc data-id="${id}" placeholder="Local" aria-label="Local" value="${esc(x.loc||'')}" style="flex:1;min-width:0"></div>`:''}</div>`;
 const figs=(f)=>Object.entries(items).filter(([i,x])=>(sec=='lg'?x.t=='l':(x.t=='f'||x.t=='b'))&&f(x)).sort((a,b)=>String(a[1].set).localeCompare(b[1].set,0,{numeric:true})||(numOf(a[0])??999)-(numOf(b[0])??999)||a[1].name.localeCompare(b[1].name));
 function list(){
-  const t=q.toLowerCase();
-  return figs(x=>(!t||(x.name+' '+x.set).toLowerCase().includes(t))&&(!onlyFree||((x.have||0)>0&&!(x.sell>0)))).slice(0,200).map(([i,x])=>row(i,x)).join('')||(loaded?(onlyFree&&!q?'<p>Nada para mostrar com o botão em ON (só Tenho acima de 0 e nada à venda). Desliga-o para ver tudo.</p>':sec=='lg'&&!q?'<p>Sem sets Lego. Carrega em + Set Lego.</p>':'<p>Nada encontrado.</p>'):'<p>A carregar…</p>');
+  const t=q.toLowerCase(),lim=sec=='lg'?400:200;
+  const arr=figs(x=>(!t||[x.name,x.set,x.box,x.loc,x.theme].join(' ').toLowerCase().includes(t))&&(!onlyFree||((x.have||0)>0&&!(x.sell>0))));
+  return arr.slice(0,lim).map(([i,x])=>row(i,x)).join('')+(arr.length>lim?`<p><small>A mostrar ${lim} de ${arr.length}. Usa a pesquisa para filtrar.</small></p>`:'')||(loaded?(onlyFree&&!q?'<p>Nada para mostrar com o botão em ON (só Tenho acima de 0 e nada à venda). Desliga-o para ver tudo.</p>':sec=='lg'&&!q?'<p>Sem sets Lego. Carrega em + Set Lego.</p>':'<p>Nada encontrado.</p>'):'<p>A carregar…</p>');
 }
 function page(){
   if(view=='login'||authed===false)return `<div class=box><h2>Entrar</h2><input id=em type=email placeholder="Email"><input id=pw type=password placeholder="Palavra-passe"><button class=p data-a=login>Entrar</button></div>`;
@@ -273,28 +274,35 @@ function box(){
 const PVP={};// PVP por set Lego (€), ex: PVP['10497']=99.99
 async function addLego(){
   const raw=(prompt('Número do set Lego (ex: 10497)')||'').trim();if(!raw)return;
-  const n=raw.split('-')[0],full=raw.includes('-')?raw:n+'-1',id='L'+full,set=full.endsWith('-1')?n:full;
-  if(items[id]&&!confirm('O set '+set+' já está na lista. Actualizar nome, imagem e ano?'))return;
-  const key=LS('rb')||rbShared;let d=null;
+  const n=raw.split('-')[0],full=raw.includes('-')?raw:n+'-1',set=full.endsWith('-1')?n:full;
+  const lines=Object.values(items).filter(x=>x.t=='l'&&String(x.set)==set),base=lines[0];
+  if(base){
+    if(!confirm('Já tens o set '+set+' ('+lines.length+(lines.length>1?' linhas':' linha')+'). Adicionar outra linha (outra caixa/local)?'))return;
+    try{await col().doc(`L${full}_${Date.now()}`).set({t:'l',set,name:base.name,img:base.img||'',year:base.year||0,theme:base.theme||'',have:0,sell:0,price:base.price||0,buy:base.buy||0,box:'',loc:''});
+      onlyFree=false;localStorage['free_lg']='';render();toast('Nova linha do set '+set+' criada. Preenche a Caixa e o Local.',1)}
+    catch(e){alert('Não consegui guardar: '+e.message)}
+    return;
+  }
+  const id='L'+full,key=LS('rb')||rbShared;let d=null;
   if(key){try{const r=await fetch(`https://rebrickable.com/api/v3/lego/sets/${encodeURIComponent(full)}/`,{headers:{Authorization:'key '+key}});if(r.ok)d=await r.json()}catch(e){}}
   let name,img,year;
   if(d){name=prompt('Nome do set',d.name);if(!name)return;img=d.set_img_url||'';year=d.year||0}
   else{if(!confirm('Não consegui obter o set '+set+' no Rebrickable (confirma o número e a chave na Config). Adicionar à mão?'))return;
     name=prompt('Nome do set');if(!name)return;img=prompt('URL da imagem (opcional)')||'';year=+prompt('Ano (opcional)')||0}
-  const pv=prompt('Preço de compra / PVP em € (opcional).\nVai para o "Compra €" deste set:',PVP[set]||(items[id]&&items[id].buy)||'');
+  const pv=prompt('Preço de compra / PVP em € (opcional).\nVai para o "Compra €" deste set:',PVP[set]||'');
   const buy=pv===null?0:(+String(pv).replace(',','.')||0);
-  try{items[id]?await col().doc(id).update(buy>0?{name,img,year,buy}:{name,img,year}):await col().doc(id).set({t:'l',set,name,img,year,have:0,sell:0,price:0,buy});onlyFree=false;localStorage['free_lg']='';render();toast('Set '+set+' guardado.',1)}
+  try{await col().doc(id).set({t:'l',set,name,img,year,have:0,sell:0,price:0,buy,box:'',loc:''});onlyFree=false;localStorage['free_lg']='';render();toast('Set '+set+' guardado. Preenche a Caixa e o Local.',1)}
   catch(e){alert('Não consegui guardar: '+e.message)}
 }
 function exp(){
-  const rows=Object.entries(items).map(([id,x])=>({id,Tipo:x.t=='s'?'Série completa':x.t=='b'?'Caixa selada':x.t=='l'?'Set Lego':'Minifigura',Serie:x.set,Nome:x.name,Imagem:x.img,Tenho:x.have,Vender:x.sell,Preco:x.price,Compra:x.buy}));
+  const rows=Object.entries(items).map(([id,x])=>({id,Tipo:x.t=='s'?'Série completa':x.t=='b'?'Caixa selada':x.t=='l'?'Set Lego':'Minifigura',Serie:x.set,Nome:x.name,Imagem:x.img,Tenho:x.have,Vender:x.sell,Preco:x.price,Compra:x.buy,Ano:x.year||'',...(x.t=='l'?{Caixa:x.box||'',Local:x.loc||'',Tema:x.theme||''}:{})}));
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),'Stock');XLSX.writeFile(wb,sec=='lg'?'sets_lego.xlsx':'minifiguras.xlsx');
 }
 async function imp(f){
   const wb=XLSX.read(await f.arrayBuffer()),rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
   let b=db.batch(),n=0;
   for(const r of rows){if(!r.id)continue;if((r.Tipo=='Set Lego')!=(sec=='lg'))continue;
-    b.set(col().doc(String(r.id)),{t:r.Tipo=='Set Lego'?'l':r.Tipo=='Minifigura'?'f':r.Tipo=='Caixa selada'?'b':'s',set:String(r.Serie),name:r.Nome||'',img:r.Imagem||'',have:+r.Tenho||0,sell:Math.min(+r.Vender||0,+r.Tenho||0),price:+r.Preco||0,buy:+r.Compra||0});
+    b.set(col().doc(String(r.id)),{t:r.Tipo=='Set Lego'?'l':r.Tipo=='Minifigura'?'f':r.Tipo=='Caixa selada'?'b':'s',set:String(r.Serie),name:r.Nome||'',img:r.Imagem||'',have:+r.Tenho||0,sell:Math.min(+r.Vender||0,+r.Tenho||0),price:+r.Preco||0,buy:+r.Compra||0,year:+r.Ano||0,...(sec=='lg'?{box:String(r.Caixa??''),loc:String(r.Local??''),theme:String(r.Tema??'')}:{})});
     if(++n%400==0){await b.commit();b=db.batch()}}
   await b.commit();alert(n+' linhas importadas');
 }
@@ -326,7 +334,7 @@ document.addEventListener('click',e=>{
   if(d.v){view=d.v;cur=null;q='';return render()}
   A[d.a]&&A[d.a](d)});
 document.addEventListener('keydown',e=>{if(e.key=='Enter'&&e.target.matches&&e.target.matches('.r img,img.zm'))e.target.click()});
-document.addEventListener('change',e=>{const d=e.target.dataset;if(d&&(d.a=='pr'||d.a=='bu')){const f=d.a=='pr'?'price':'buy',v=+e.target.value||0;col().doc(d.id).update({[f]:v});log(d.id,f,v)}});
+document.addEventListener('change',e=>{const d=e.target.dataset;if(d&&(d.a=='bx'||d.a=='lc')){col().doc(d.id).update({[d.a=='bx'?'box':'loc']:e.target.value.trim()});return}if(d&&(d.a=='pr'||d.a=='bu')){const f=d.a=='pr'?'price':'buy',v=+e.target.value||0;col().doc(d.id).update({[f]:v});log(d.id,f,v)}});
 document.addEventListener('input',e=>{if(e.target.id=='q'){q=e.target.value;$('#list').innerHTML=list()}});
 $('#file').onchange=e=>{if(e.target.files[0])imp(e.target.files[0]);e.target.value=''};
 ['cap','gal2'].forEach(i=>$('#'+i).onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)fromFile(f)});
