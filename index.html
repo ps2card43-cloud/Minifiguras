@@ -29,7 +29,7 @@ body.cfgbg{background:linear-gradient(rgba(17,24,39,.15),rgba(17,24,39,.3)),url(
 <nav><button data-v="series">Sets</button><button data-v="all">Unidade</button><button data-v="sell">Venda</button><button data-v="log">Histórico</button><button data-v="cfg">Config</button></nav>
 <div id="chkdlg" style="display:none;position:fixed;inset:0;height:100dvh;background:rgba(0,0,0,.85);z-index:11;align-items:center;justify-content:center;padding:16px"><div style="background:#1f2937;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;width:100%;max-width:420px"><b>Check list deste set</b><select id="chksel"></select><button id="chkuse" class="p">Usar a do site</button><button id="chkgal">Escolher imagem da galeria</button><button id="chkx">Cancelar</button></div></div>
 <div id="zoom" style="display:none;position:fixed;inset:0;height:100dvh;background:rgba(0,0,0,.9);z-index:10;align-items:center;justify-content:center"><img id="zi" style="max-width:96%;max-height:92%;object-fit:contain;background:#fff;border-radius:12px"></div>
-<div id="cam"><small style="position:absolute;top:6px;left:8px;color:#fff;z-index:2">v29</small><video id="vid" playsinline muted></video><div style="display:flex;gap:8px;padding:8px 8px calc(env(safe-area-inset-bottom,0px) + 28px);flex-wrap:wrap"><small style="flex:1 1 100%;color:#9ca3af">Afasta o telemóvel uns 20–25 cm e toca no vídeo para focar.</small><button id="picbtn" class="p" style="flex:1 1 100%">📸 Capturar código</button><button id="galbtn" style="flex:1 1 100%">🖼 Escolher foto da galeria</button><button id="typ" style="flex:1">⌨ Escrever</button><button id="stop" style="flex:1">Cancelar</button></div></div>
+<div id="cam"><small style="position:absolute;top:6px;left:8px;color:#fff;z-index:2">v30</small><video id="vid" playsinline muted></video><div style="display:flex;gap:8px;padding:8px 8px calc(env(safe-area-inset-bottom,0px) + 28px);flex-wrap:wrap"><small style="flex:1 1 100%;color:#9ca3af">Afasta o telemóvel uns 20–25 cm e toca no vídeo para focar.</small><button id="picbtn" class="p" style="flex:1 1 100%">📸 Capturar código</button><button id="galbtn" style="flex:1 1 100%">🖼 Escolher foto da galeria</button><button id="typ" style="flex:1">⌨ Escrever</button><button id="stop" style="flex:1">Cancelar</button></div></div>
 <input type="file" id="gal" accept="image/*" hidden>
 <input type="file" id="chkin" accept="image/*" hidden>
 <input type="file" id="cap" accept="image/*" capture="environment" hidden>
@@ -70,9 +70,9 @@ async function fillBuy(sets){
   return {n,miss};
 }
 let rbShared='',db,items={},loaded=false,codes={'5702015594660':'71013'},logs=[],view='series',cur=null,q='',onlyFree=LS('free')=='1';
-const VER='v29';
+const VER='v30';
 let authed=null,sec=null,unsubI=null,unsubL=null,navSec=null;
-let tt;function toast(m){let e=$('#toast');if(!e){e=document.createElement('div');e.id='toast';e.setAttribute('role','alert');document.body.appendChild(e)}e.textContent=m;e.style.display='block';clearTimeout(tt);tt=setTimeout(()=>e.style.display='none',3500);try{navigator.vibrate&&navigator.vibrate(60)}catch(_){}}
+let tt;function toast(m,ok){let e=$('#toast');if(!e){e=document.createElement('div');e.id='toast';e.setAttribute('role','alert');document.body.appendChild(e)}e.textContent=m;e.style.background=ok?'#16a34a':'#ef4444';e.style.display='block';clearTimeout(tt);tt=setTimeout(()=>e.style.display='none',3500);try{navigator.vibrate&&navigator.vibrate(60)}catch(_){}}
 const col=()=>db.collection(sec=='lg'?'lego':'items');
 function start(){
   let c;try{c=JSON.parse(LS('fb'))}catch(e){}
@@ -89,7 +89,7 @@ function start(){
 }
 function enter(s){
   unsubI&&unsubI();unsubL&&unsubL();
-  sec=s;items={};logs=[];loaded=false;cur=null;q='';view=s=='lg'?'all':'series';render();scrollTo(0,0);
+  sec=s;items={};logs=[];loaded=false;cur=null;q='';onlyFree=LS('free_'+s)=='1';view=s=='lg'?'all':'series';render();scrollTo(0,0);
   unsubI=col().onSnapshot(sn=>{if(sec!=s)return;loaded=true;sn.docChanges().forEach(h=>h.type=='removed'?delete items[h.doc.id]:items[h.doc.id]=h.doc.data());render();if(s=='mf'&&!sn.metadata.fromCache)autoFill()},e=>alert('Erro na base de dados: '+e.code+'\n'+e.message));
   unsubL=db.collection(s=='lg'?'lego_log':'log').orderBy('ts','desc').limit(100).onSnapshot(sn=>{if(sec!=s)return;logs=sn.docs.map(d=>d.data());if(view=='log')render()});
 }
@@ -111,7 +111,7 @@ const row=(id,x,label)=>`<div class=r><img tabindex=0 data-z="${esc(id)}" src="$
 const figs=(f)=>Object.entries(items).filter(([i,x])=>(sec=='lg'?x.t=='l':(x.t=='f'||x.t=='b'))&&f(x)).sort((a,b)=>String(a[1].set).localeCompare(b[1].set,0,{numeric:true})||(numOf(a[0])??999)-(numOf(b[0])??999)||a[1].name.localeCompare(b[1].name));
 function list(){
   const t=q.toLowerCase();
-  return figs(x=>(!t||(x.name+' '+x.set).toLowerCase().includes(t))&&(!onlyFree||((x.have||0)>0&&!(x.sell>0)))).slice(0,200).map(([i,x])=>row(i,x)).join('')||(loaded?(sec=='lg'&&!q?'<p>Sem sets Lego. Carrega em + Set Lego.</p>':'<p>Nada encontrado.</p>'):'<p>A carregar…</p>');
+  return figs(x=>(!t||(x.name+' '+x.set).toLowerCase().includes(t))&&(!onlyFree||((x.have||0)>0&&!(x.sell>0)))).slice(0,200).map(([i,x])=>row(i,x)).join('')||(loaded?(onlyFree&&!q?'<p>Nada para mostrar com o botão em ON (só Tenho acima de 0 e nada à venda). Desliga-o para ver tudo.</p>':sec=='lg'&&!q?'<p>Sem sets Lego. Carrega em + Set Lego.</p>':'<p>Nada encontrado.</p>'):'<p>A carregar…</p>');
 }
 function page(){
   if(view=='login'||authed===false)return `<div class=box><h2>Entrar</h2><input id=em type=email placeholder="Email"><input id=pw type=password placeholder="Palavra-passe"><button class=p data-a=login>Entrar</button></div>`;
@@ -266,7 +266,7 @@ async function addLego(){
   if(d){name=prompt('Nome do set',d.name);if(!name)return;img=d.set_img_url||'';year=d.year||0}
   else{if(!confirm('Não consegui obter o set '+set+' no Rebrickable (confirma o número e a chave na Config). Adicionar à mão?'))return;
     name=prompt('Nome do set');if(!name)return;img=prompt('URL da imagem (opcional)')||'';year=+prompt('Ano (opcional)')||0}
-  try{items[id]?await col().doc(id).update({name,img,year}):await col().doc(id).set({t:'l',set,name,img,year,have:0,sell:0,price:0,buy:0});toast('Set '+set+' guardado.')}
+  try{items[id]?await col().doc(id).update({name,img,year}):await col().doc(id).set({t:'l',set,name,img,year,have:0,sell:0,price:0,buy:0});onlyFree=false;localStorage['free_lg']='';render();toast('Set '+set+' guardado.',1)}
   catch(e){alert('Não consegui guardar: '+e.message)}
 }
 function exp(){
@@ -291,7 +291,7 @@ const A={
     await col().doc('S'+cur).update({base:pr});const r=await fillBuy([cur]);alert(r.n+' minifiguras actualizadas com '+pr.toFixed(2)+' €.')},
   fillall:async()=>{if(!confirm('Preencher o "Compra €" de todas as minifiguras que estão a 0, com o PVP base do set (USD = EUR)? Os que já têm preço não são alterados.'))return;
     const r=await fillBuy(Object.values(items).filter(x=>x.t=='s').map(x=>x.set));
-    alert(r.n+' minifiguras actualizadas.'+(r.miss.length?'\n\nSem preço base (define em cada set com 💰 Preço base):\n'+r.miss.join('\n'):''))},free:()=>{onlyFree=!onlyFree;localStorage.free=onlyFree?'1':'';render()},
+    alert(r.n+' minifiguras actualizadas.'+(r.miss.length?'\n\nSem preço base (define em cada set com 💰 Preço base):\n'+r.miss.join('\n'):''))},free:()=>{onlyFree=!onlyFree;localStorage['free_'+sec]=onlyFree?'1':'';render()},
   imp:()=>$('#file').click(),
   del:d=>{if(confirm('Apagar este item?'))col().doc(d.id).delete()},
   login:()=>firebase.auth().signInWithEmailAndPassword($('#em').value.trim(),$('#pw').value).catch(e=>alert(e.message)),
