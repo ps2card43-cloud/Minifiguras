@@ -5,7 +5,7 @@
 <title>Minifiguras</title>
 <style>
 *{box-sizing:border-box}body{margin:0;font:16px system-ui,sans-serif;background:#111827;color:#f3f4f6;padding-bottom:70px}
-button,input,textarea{font:inherit;color:inherit;background:#1f2937;border:1px solid #374151;border-radius:10px;padding:10px 12px;min-height:44px}
+button,input,textarea,select{font:inherit;color:inherit;background:#1f2937;border:1px solid #374151;border-radius:10px;padding:10px 12px;min-height:44px}
 button{cursor:pointer}button.p{background:#f59e0b;color:#111;border:0;font-weight:700}
 :focus{outline:3px solid #facc15;outline-offset:2px}
 #app{padding:12px;max-width:1100px;margin:auto}.bar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}.bar input{flex:1;min-width:140px}
@@ -21,8 +21,9 @@ textarea{width:100%;min-height:110px}.tot{font-weight:700;margin:8px 0}
 </style></head><body>
 <div id="app"></div>
 <nav><button data-v="series">Séries</button><button data-v="all">Unidade</button><button data-v="sell">Venda</button><button data-v="log">Histórico</button><button data-v="cfg">Config</button></nav>
+<div id="chkdlg" style="display:none;position:fixed;inset:0;height:100dvh;background:rgba(0,0,0,.85);z-index:11;align-items:center;justify-content:center;padding:16px"><div style="background:#1f2937;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;width:100%;max-width:420px"><b>Check list desta série</b><select id="chksel"></select><button id="chkuse" class="p">Usar a do site</button><button id="chkgal">Escolher imagem da galeria</button><button id="chkx">Cancelar</button></div></div>
 <div id="zoom" style="display:none;position:fixed;inset:0;height:100dvh;background:rgba(0,0,0,.9);z-index:10;align-items:center;justify-content:center"><img id="zi" style="max-width:96%;max-height:92%;object-fit:contain;background:#fff;border-radius:12px"></div>
-<div id="cam"><small style="position:absolute;top:6px;left:8px;color:#fff;z-index:2">v17</small><video id="vid" playsinline muted></video><div style="display:flex;gap:8px;padding:8px 8px calc(env(safe-area-inset-bottom,0px) + 28px);flex-wrap:wrap"><small style="flex:1 1 100%;color:#9ca3af">Afasta o telemóvel uns 20–25 cm e toca no vídeo para focar.</small><button id="picbtn" class="p" style="flex:1 1 100%">📸 Capturar código</button><button id="galbtn" style="flex:1 1 100%">🖼 Escolher foto da galeria</button><button id="typ" style="flex:1">⌨ Escrever</button><button id="stop" style="flex:1">Cancelar</button></div></div>
+<div id="cam"><small style="position:absolute;top:6px;left:8px;color:#fff;z-index:2">v19</small><video id="vid" playsinline muted></video><div style="display:flex;gap:8px;padding:8px 8px calc(env(safe-area-inset-bottom,0px) + 28px);flex-wrap:wrap"><small style="flex:1 1 100%;color:#9ca3af">Afasta o telemóvel uns 20–25 cm e toca no vídeo para focar.</small><button id="picbtn" class="p" style="flex:1 1 100%">📸 Capturar código</button><button id="galbtn" style="flex:1 1 100%">🖼 Escolher foto da galeria</button><button id="typ" style="flex:1">⌨ Escrever</button><button id="stop" style="flex:1">Cancelar</button></div></div>
 <input type="file" id="gal" accept="image/*" hidden>
 <input type="file" id="chkin" accept="image/*" hidden>
 <input type="file" id="cap" accept="image/*" capture="environment" hidden>
@@ -37,6 +38,7 @@ textarea{width:100%;min-height:110px}.tot{font-weight:700;margin:8px 0}
 const $=s=>document.querySelector(s),LS=k=>localStorage.getItem(k)||'';
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const DEF={apiKey:"AIzaSyD35ofqfVPNtvUMHI60T5uV7IilNAd9uOk",authDomain:"minifiguras-728c0.firebaseapp.com",projectId:"minifiguras-728c0",storageBucket:"minifiguras-728c0.firebasestorage.app",messagingSenderId:"61068075012",appId:"1:61068075012:web:67abaee0fd578eef1d9551"};
+const CK='https://static.wixstatic.com/media/92be5c_',CHK={'8683': 'aef4055c02b3452ba99cb2b040b571c3~mv2.jpg', '8684': '1ededa61e0de4cbf9c86f8ff3d540546~mv2.png', '8803': '02da3f039bf5419f8d3a17623687b433~mv2.jpg', '8804': '180efc5915db44feb2bd64aaeae3a534~mv2.jpeg', '8805': '9989fe00fb8740c59749625873f279d7~mv2.jpg', '8827': 'cecd5f0db26c4be4b815e1d0389a0ad3~mv2.jpg', '8831': '4d36adc20fb3416c8b7bd04aae2a5230~mv2.jpg', '8833': '39c055de18aa4f95b089e74e97e5a72c~mv2.jpeg', '71000': 'd829e81e412c44149195e8818deb17a0~mv2.jpg', '71001': '71efcbda97914e0eafee71f5d8d2ce92~mv2.jpg', '71002': '11489ac6307845fab618727bb892231e~mv2.jpg', '71007': 'b08ed604f57143eaa8b57b54f06aeb19~mv2.jpg', '71008': 'b2576cdffc3d4aacac587090e2636492~mv2.jpg', '71010': '6bf9bd58ded44201993a8631326d11d9~mv2.jpeg', '71011': 'e830186f205b4f1da4261b88db2947d1~mv2.jpeg', '71013': 'ca699c7cfad34bfb98be67220bafa009~mv2.jpg', '71018': '9465b7d524ae4b84b4fbf79a6b1d21b7~mv2.png', '71021': '240383d8b5d04166a58c6565107acd90~mv2.jpeg', '71025': 'ea4ffaeb930248a886cbf6466f8ed205~mv2.jpg', '71027': '94dc875150294b69a1b2416b9ac9093c~mv2.jpg', '71029': '86c71064adb148a9b5dd67ad1bbf6742~mv2.jpg', '71032': 'c0aa7b3d9b364da090ed93c6eac18652~mv2.png', '71034': '6b50ddc87e1440bba3dac08cb9bccfd7~mv2.png', '71037': '251aa9b6140b4cbfb3eca7c2ad4aefc7~mv2.png', '71045': '582ce53de0154e02be58f78847a14171~mv2.png', '71046': 'b500b684d28b43bca5a0197eb51138a6~mv2.png', '71048': '40cd8c583d7a4e129eb3f27915ec9576~mv2.png', '71004': 'bb8bb7608ca14e76b0708ae33a7fb35a~mv2.jpeg', '71005': 'ad2122d6653641e7815e07df898f4baa~mv2.jpg', '71009': 'b74648bf2f6041f89d08dc004b3261f8~mv2.jpg', '71012': '0b63be2013d346829fba1189c8775a19~mv2.jpeg', '71024': '73228e9cfedd4a0a937a954b4105e24a~mv2.jpeg', '71017': '1560f9d359db4fc4bce820d6cba524ba~mv2.jpg', '71020': 'c6555164abf84136bf4373115c78b823~mv2.jpg', '71019': 'a14bf5f4965c48239069b2df3621d614~mv2.jpeg', '71022': 'b096263f670a436e9f5e9549c47e8f34~mv2.jpg', '71023': '0c5b9995df2846db8d8afaad5c7ddf10~mv2.jpg', '71028': '375a57038b4740d8a630599a24d0c021~mv2.png', '71030': '4c22262b07b5426199cbf001efd6b48a~mv2.jpg', '71031': '3cca91e8743f4724a67e16507d719b70~mv2.jpg', '71033': '0f3b864da7914ac0a10a652c7f78254f~mv2.jpg', '71038': '4ad2726706514250b10954eaeacd1a4f~mv2.png', '71039': '6e8ab0b8e55d4a30bb8d1782e842af1f~mv2.png', '71047': '237349a2a1d24474a517a91df02dfd09~mv2.jpg', '71014': '074aa109cea04f438da4cdf37b70a76b~mv2.jpg', '8909': '2de053c8948d4d7da770fe0959da569e~mv2.png'},SITE=[["Série 1", "aef4055c02b3452ba99cb2b040b571c3~mv2.jpg"], ["Série 2", "1ededa61e0de4cbf9c86f8ff3d540546~mv2.png"], ["Série 3", "02da3f039bf5419f8d3a17623687b433~mv2.jpg"], ["Série 4", "180efc5915db44feb2bd64aaeae3a534~mv2.jpeg"], ["Série 5", "9989fe00fb8740c59749625873f279d7~mv2.jpg"], ["Série 6", "cecd5f0db26c4be4b815e1d0389a0ad3~mv2.jpg"], ["Série 7", "4d36adc20fb3416c8b7bd04aae2a5230~mv2.jpg"], ["Série 8", "39c055de18aa4f95b089e74e97e5a72c~mv2.jpeg"], ["Série 9", "d829e81e412c44149195e8818deb17a0~mv2.jpg"], ["Série 10", "71efcbda97914e0eafee71f5d8d2ce92~mv2.jpg"], ["Série 11", "11489ac6307845fab618727bb892231e~mv2.jpg"], ["Série 12", "b08ed604f57143eaa8b57b54f06aeb19~mv2.jpg"], ["Série 13", "b2576cdffc3d4aacac587090e2636492~mv2.jpg"], ["Série 14", "6bf9bd58ded44201993a8631326d11d9~mv2.jpeg"], ["Série 15", "e830186f205b4f1da4261b88db2947d1~mv2.jpeg"], ["Série 16", "ca699c7cfad34bfb98be67220bafa009~mv2.jpg"], ["Série 17", "9465b7d524ae4b84b4fbf79a6b1d21b7~mv2.png"], ["Série 18", "240383d8b5d04166a58c6565107acd90~mv2.jpeg"], ["Série 19", "ea4ffaeb930248a886cbf6466f8ed205~mv2.jpg"], ["Série 20", "94dc875150294b69a1b2416b9ac9093c~mv2.jpg"], ["Série 21", "86c71064adb148a9b5dd67ad1bbf6742~mv2.jpg"], ["Série 22", "c0aa7b3d9b364da090ed93c6eac18652~mv2.png"], ["Série 23", "6b50ddc87e1440bba3dac08cb9bccfd7~mv2.png"], ["Série 24", "251aa9b6140b4cbfb3eca7c2ad4aefc7~mv2.png"], ["Série 25", "582ce53de0154e02be58f78847a14171~mv2.png"], ["Série 26", "b500b684d28b43bca5a0197eb51138a6~mv2.png"], ["Série 27", "40cd8c583d7a4e129eb3f27915ec9576~mv2.png"], ["The Lego Movie", "bb8bb7608ca14e76b0708ae33a7fb35a~mv2.jpeg"], ["The Lego Movie 2", "0c5b9995df2846db8d8afaad5c7ddf10~mv2.jpg"], ["Ninjago Movie – Série 1", "a14bf5f4965c48239069b2df3621d614~mv2.jpeg"], ["Unikitty", "34d10fc1d79c44d698e71349442cefa2~mv2.png"], ["Team GB Olympic", "2de053c8948d4d7da770fe0959da569e~mv2.png"], ["Simpsons – Série 1", "ad2122d6653641e7815e07df898f4baa~mv2.jpg"], ["Simpsons – Série 2", "b74648bf2f6041f89d08dc004b3261f8~mv2.jpg"], ["Disney – Série 1", "0b63be2013d346829fba1189c8775a19~mv2.jpeg"], ["Disney – Série 2", "73228e9cfedd4a0a937a954b4105e24a~mv2.jpeg"], ["Batman Movie – Série 1", "1560f9d359db4fc4bce820d6cba524ba~mv2.jpg"], ["Batman Movie – Série 2", "c6555164abf84136bf4373115c78b823~mv2.jpg"], ["Harry Potter e Fantastic Beasts", "b096263f670a436e9f5e9549c47e8f34~mv2.jpg"], ["Harry Potter – Série 2", "375a57038b4740d8a630599a24d0c021~mv2.png"], ["DFB (seleção alemã)", "074aa109cea04f438da4cdf37b70a76b~mv2.jpg"], ["DC Super Heroes", "f64015f0ca7a45c8b53327201a2f485a~mv2.jpeg"], ["VIDYO – Série 1", "257cd38fc400435793373c1173e1a73c~mv2.jpg"], ["VIDYO – Série 2", "4c5c583b39a34b6e891d59e889af2d91~mv2.png"], ["Looney Tunes", "4c22262b07b5426199cbf001efd6b48a~mv2.jpg"], ["Marvel – Série 1", "3cca91e8743f4724a67e16507d719b70~mv2.jpg"], ["Marvel – Série 2", "6e8ab0b8e55d4a30bb8d1782e842af1f~mv2.png"], ["Muppets", "0f3b864da7914ac0a10a652c7f78254f~mv2.jpg"], ["Super Mario – Série 1", "984945aa9fb54810a3449164d0b32f76~mv2.png"], ["Super Mario – Série 2", "64ab371725a34f0c9bc4da7d4db91182~mv2.jpg"], ["Super Mario – Série 3", "ff62ffb170194cac9faf36a99568f8b4~mv2.jpg"], ["Super Mario – Série 4", "da0e7d47e20b47b597986ce71a504334~mv2.jpg"], ["Super Mario – Série 5", "e7b5de68243545d6881dca92d85c76eb~mv2.jpg"], ["Dungeons & Dragons", "237349a2a1d24474a517a91df02dfd09~mv2.jpg"], ["Disney 100", "4ad2726706514250b10954eaeacd1a4f~mv2.png"], ["Fórmula 1", "a3174296115542acbae01c95da14639c~mv2.png"], ["Spider-Man Across the Spider-Verse", "20502568f7a54f74a3dade35b5491b92~mv2.png"]];
 const chkCache={};
 let rbShared='',db,items={},loaded=false,codes={'5702015594660':'71013'},logs=[],view='series',cur=null,q='';
 const col=()=>db.collection('items');
@@ -69,7 +71,7 @@ function list(){
 function page(){
   if(view=='login')return `<div class=box><h2>Entrar</h2><input id=em type=email placeholder="Email"><input id=pw type=password placeholder="Palavra-passe"><button class=p data-a=login>Entrar</button></div>`;
   const all=Object.entries(items);
-  if(view=='cfg')return `<div class=box><h2>Configuração <small>v17</small></h2>
+  if(view=='cfg')return `<div class=box><h2>Configuração <small>v19</small></h2>
   <small>Firebase: ligado automaticamente ✓</small><details><summary><small>Avançado: usar outra configuração Firebase</small></summary><textarea id=fb>${esc(LS('fb'))}</textarea></details>
   <small>Chave API Rebrickable</small><input id=rb value="${esc(LS('rb')||rbShared)}">
   <button class=p data-a=savecfg>Guardar</button><hr style="width:100%;border-color:#374151">
@@ -168,13 +170,15 @@ async function handleCode(code){
 }
 async function openZoom(im){
   const z=$('#zoom'),zi=$('#zi'),it=items[im.dataset.z];
-  const show=src=>{zi.src=src;zi.style.visibility='visible'};
+  const show=src=>{zi.onerror=null;zi.src=src;zi.style.visibility='visible'};
   z.style.display='flex';
   if(it&&it.t=='s'&&it.hasChk){
     zi.style.visibility='hidden';
     try{let c=chkCache[it.set];
       if(!c){const d=await db.collection('checks').doc(String(it.set)).get();c=d.exists?d.data().img:null;if(c)chkCache[it.set]=c}
       if(z.style.display=='flex')show(c||im.src)}catch(e){show(im.src)}
+  }else if(it&&it.t=='s'&&(it.ck||CHK[it.set])){
+    zi.style.visibility='visible';zi.onerror=()=>{zi.onerror=null;zi.src=im.src};zi.src=CK+(it.ck||CHK[it.set]);
   }else show(im.src);
 }
 async function setChk(f){
@@ -188,6 +192,11 @@ async function setChk(f){
     await col().doc('S'+cur).update({hasChk:true});
     chkCache[cur]=img;alert('Check list guardada. Toca na foto da série para a ver.');
   }catch(e){alert('Não consegui guardar a check list.')}
+}
+function chkDialog(){
+  const it=items['S'+cur];if(!it)return;
+  $('#chksel').innerHTML=SITE.map(([n,x])=>`<option value="${x}"${(it.ck||CHK[it.set])==x?' selected':''}>${n}</option>`).join('');
+  $('#chkdlg').style.display='flex';
 }
 function manual(){
   const name=prompt('Nome da minifigura');if(!name)return;const img=prompt('URL da imagem (opcional)')||'';
@@ -208,7 +217,7 @@ async function imp(f){
 const A={
   st:d=>upd(d.id,d.f,+d.d),
   open:d=>{cur=d.set;view='detail';render();scrollTo(0,0)},
-  pr:()=>{},bu:()=>{},photo:()=>$('#cap').click(),chk:()=>$('#chkin').click(),gallery:()=>$('#gal2').click(),scan,add:addSeries,manual,exp,
+  pr:()=>{},bu:()=>{},photo:()=>$('#cap').click(),chk:chkDialog,gallery:()=>$('#gal2').click(),scan,add:addSeries,manual,exp,
   imp:()=>$('#file').click(),
   del:d=>{if(confirm('Apagar este item?'))col().doc(d.id).delete()},
   login:()=>firebase.auth().signInWithEmailAndPassword($('#em').value.trim(),$('#pw').value).catch(e=>alert(e.message)),
@@ -230,6 +239,9 @@ document.addEventListener('change',e=>{const d=e.target.dataset;if(d&&(d.a=='pr'
 document.addEventListener('input',e=>{if(e.target.id=='q'){q=e.target.value;$('#list').innerHTML=list()}});
 $('#file').onchange=e=>{if(e.target.files[0])imp(e.target.files[0]);e.target.value=''};
 ['cap','gal2'].forEach(i=>$('#'+i).onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)fromFile(f)});
+$('#chkuse').onclick=async()=>{const x=$('#chksel').value;$('#chkdlg').style.display='none';try{await col().doc('S'+cur).update({ck:x,hasChk:false});alert('Check list escolhida. Toca na foto da série para a ver.')}catch(e){alert('Não consegui guardar.')}};
+$('#chkgal').onclick=()=>{$('#chkdlg').style.display='none';$('#chkin').click()};
+$('#chkx').onclick=()=>{$('#chkdlg').style.display='none'};
 $('#chkin').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)setChk(f)};
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js');
 start();
