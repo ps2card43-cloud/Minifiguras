@@ -29,7 +29,7 @@ body.cfgbg{background:linear-gradient(rgba(17,24,39,.15),rgba(17,24,39,.3)),url(
 <nav><button data-v="series">Sets</button><button data-v="all">Unidade</button><button data-v="sell">Venda</button><button data-v="log">Histórico</button><button data-v="cfg">Config</button></nav>
 <div id="chkdlg" style="display:none;position:fixed;inset:0;height:100dvh;background:rgba(0,0,0,.85);z-index:11;align-items:center;justify-content:center;padding:16px"><div style="background:#1f2937;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;width:100%;max-width:420px"><b>Check list deste set</b><select id="chksel"></select><button id="chkuse" class="p">Usar a do site</button><button id="chkgal">Escolher imagem da galeria</button><button id="chkx">Cancelar</button></div></div>
 <div id="zoom" style="display:none;position:fixed;inset:0;height:100dvh;background:rgba(0,0,0,.9);z-index:10;align-items:center;justify-content:center"><img id="zi" style="max-width:96%;max-height:92%;object-fit:contain;background:#fff;border-radius:12px"></div>
-<div id="cam"><small style="position:absolute;top:6px;left:8px;color:#fff;z-index:2">v31</small><video id="vid" playsinline muted></video><div style="display:flex;gap:8px;padding:8px 8px calc(env(safe-area-inset-bottom,0px) + 28px);flex-wrap:wrap"><small style="flex:1 1 100%;color:#9ca3af">Afasta o telemóvel uns 20–25 cm e toca no vídeo para focar.</small><button id="picbtn" class="p" style="flex:1 1 100%">📸 Capturar código</button><button id="galbtn" style="flex:1 1 100%">🖼 Escolher foto da galeria</button><button id="typ" style="flex:1">⌨ Escrever</button><button id="stop" style="flex:1">Cancelar</button></div></div>
+<div id="cam"><small style="position:absolute;top:6px;left:8px;color:#fff;z-index:2">v32</small><video id="vid" playsinline muted></video><div style="display:flex;gap:8px;padding:8px 8px calc(env(safe-area-inset-bottom,0px) + 28px);flex-wrap:wrap"><small style="flex:1 1 100%;color:#9ca3af">Afasta o telemóvel uns 20–25 cm e toca no vídeo para focar.</small><button id="picbtn" class="p" style="flex:1 1 100%">📸 Capturar código</button><button id="galbtn" style="flex:1 1 100%">🖼 Escolher foto da galeria</button><button id="typ" style="flex:1">⌨ Escrever</button><button id="stop" style="flex:1">Cancelar</button></div></div>
 <input type="file" id="gal" accept="image/*" hidden>
 <input type="file" id="chkin" accept="image/*" hidden>
 <input type="file" id="cap" accept="image/*" capture="environment" hidden>
@@ -70,7 +70,7 @@ async function fillBuy(sets){
   return {n,miss};
 }
 let rbShared='',db,items={},loaded=false,codes={'5702015594660':'71013'},logs=[],view='series',cur=null,q='',onlyFree=LS('free')=='1';
-const VER='v31';
+const VER='v32';
 let authed=null,sec=null,unsubI=null,unsubL=null,navSec=null;
 let tt;function toast(m,ok){let e=$('#toast');if(!e){e=document.createElement('div');e.id='toast';e.setAttribute('role','alert');document.body.appendChild(e)}e.textContent=m;e.style.background=ok?'#16a34a':'#ef4444';e.style.display='block';clearTimeout(tt);tt=setTimeout(()=>e.style.display='none',3500);try{navigator.vibrate&&navigator.vibrate(60)}catch(_){}}
 const col=()=>db.collection(sec=='lg'?'lego':'items');
@@ -270,6 +270,7 @@ function box(){
   const s=items['S'+cur],name=prompt('Nome da caixa selada',`Caixa selada – ${s?s.name:cur}`);if(!name)return;
   col().doc(`B${cur}_${Date.now()}`).set({t:'b',set:cur,name,img:(s&&s.img)||'',have:0,sell:0,price:0,buy:0});
 }
+const PVP={};// PVP por set Lego (€), ex: PVP['10497']=99.99
 async function addLego(){
   const raw=(prompt('Número do set Lego (ex: 10497)')||'').trim();if(!raw)return;
   const n=raw.split('-')[0],full=raw.includes('-')?raw:n+'-1',id='L'+full,set=full.endsWith('-1')?n:full;
@@ -280,7 +281,9 @@ async function addLego(){
   if(d){name=prompt('Nome do set',d.name);if(!name)return;img=d.set_img_url||'';year=d.year||0}
   else{if(!confirm('Não consegui obter o set '+set+' no Rebrickable (confirma o número e a chave na Config). Adicionar à mão?'))return;
     name=prompt('Nome do set');if(!name)return;img=prompt('URL da imagem (opcional)')||'';year=+prompt('Ano (opcional)')||0}
-  try{items[id]?await col().doc(id).update({name,img,year}):await col().doc(id).set({t:'l',set,name,img,year,have:0,sell:0,price:0,buy:0});onlyFree=false;localStorage['free_lg']='';render();toast('Set '+set+' guardado.',1)}
+  const pv=prompt('Preço de compra / PVP em € (opcional).\nVai para o "Compra €" deste set:',PVP[set]||(items[id]&&items[id].buy)||'');
+  const buy=pv===null?0:(+String(pv).replace(',','.')||0);
+  try{items[id]?await col().doc(id).update(buy>0?{name,img,year,buy}:{name,img,year}):await col().doc(id).set({t:'l',set,name,img,year,have:0,sell:0,price:0,buy});onlyFree=false;localStorage['free_lg']='';render();toast('Set '+set+' guardado.',1)}
   catch(e){alert('Não consegui guardar: '+e.message)}
 }
 function exp(){
