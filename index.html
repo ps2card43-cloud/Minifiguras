@@ -18,12 +18,16 @@ small{color:#9ca3af}.r{display:flex;align-items:center;gap:8px;flex-wrap:wrap;ba
 nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:#0b1220;border-top:1px solid #374151}nav button{flex:1;border:0;border-radius:0;background:none}nav button.on{color:#f59e0b;font-weight:700}
 #cam{position:fixed;inset:0;height:100dvh;overflow:hidden;background:#000;z-index:9;display:none;flex-direction:column}#cam video{flex:none;height:45dvh;width:100%;object-fit:cover}
 textarea{width:100%;min-height:110px}.tot{font-weight:700;margin:8px 0}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#ef4444;margin-left:6px;vertical-align:middle}
+.sw{display:flex;align-items:center;gap:10px;width:100%;text-align:left}.sw i{width:42px;height:24px;border-radius:12px;background:#374151;position:relative;flex:none}
+.sw i:after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.15s}.sw.on i{background:#f59e0b}.sw.on i:after{left:21px}.sw span{flex:1}
+#toast{display:none;position:fixed;left:12px;right:12px;bottom:80px;z-index:12;background:#ef4444;color:#fff;border-radius:10px;padding:12px;font-weight:600;text-align:center}
 </style></head><body>
 <div id="app"></div>
 <nav><button data-v="series">Séries</button><button data-v="all">Unidade</button><button data-v="sell">Venda</button><button data-v="log">Histórico</button><button data-v="cfg">Config</button></nav>
 <div id="chkdlg" style="display:none;position:fixed;inset:0;height:100dvh;background:rgba(0,0,0,.85);z-index:11;align-items:center;justify-content:center;padding:16px"><div style="background:#1f2937;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;width:100%;max-width:420px"><b>Check list desta série</b><select id="chksel"></select><button id="chkuse" class="p">Usar a do site</button><button id="chkgal">Escolher imagem da galeria</button><button id="chkx">Cancelar</button></div></div>
 <div id="zoom" style="display:none;position:fixed;inset:0;height:100dvh;background:rgba(0,0,0,.9);z-index:10;align-items:center;justify-content:center"><img id="zi" style="max-width:96%;max-height:92%;object-fit:contain;background:#fff;border-radius:12px"></div>
-<div id="cam"><small style="position:absolute;top:6px;left:8px;color:#fff;z-index:2">v20</small><video id="vid" playsinline muted></video><div style="display:flex;gap:8px;padding:8px 8px calc(env(safe-area-inset-bottom,0px) + 28px);flex-wrap:wrap"><small style="flex:1 1 100%;color:#9ca3af">Afasta o telemóvel uns 20–25 cm e toca no vídeo para focar.</small><button id="picbtn" class="p" style="flex:1 1 100%">📸 Capturar código</button><button id="galbtn" style="flex:1 1 100%">🖼 Escolher foto da galeria</button><button id="typ" style="flex:1">⌨ Escrever</button><button id="stop" style="flex:1">Cancelar</button></div></div>
+<div id="cam"><small style="position:absolute;top:6px;left:8px;color:#fff;z-index:2">v21</small><video id="vid" playsinline muted></video><div style="display:flex;gap:8px;padding:8px 8px calc(env(safe-area-inset-bottom,0px) + 28px);flex-wrap:wrap"><small style="flex:1 1 100%;color:#9ca3af">Afasta o telemóvel uns 20–25 cm e toca no vídeo para focar.</small><button id="picbtn" class="p" style="flex:1 1 100%">📸 Capturar código</button><button id="galbtn" style="flex:1 1 100%">🖼 Escolher foto da galeria</button><button id="typ" style="flex:1">⌨ Escrever</button><button id="stop" style="flex:1">Cancelar</button></div></div>
 <input type="file" id="gal" accept="image/*" hidden>
 <input type="file" id="chkin" accept="image/*" hidden>
 <input type="file" id="cap" accept="image/*" capture="environment" hidden>
@@ -40,7 +44,8 @@ const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 const DEF={apiKey:"AIzaSyD35ofqfVPNtvUMHI60T5uV7IilNAd9uOk",authDomain:"minifiguras-728c0.firebaseapp.com",projectId:"minifiguras-728c0",storageBucket:"minifiguras-728c0.firebasestorage.app",messagingSenderId:"61068075012",appId:"1:61068075012:web:67abaee0fd578eef1d9551"};
 const CK='https://static.wixstatic.com/media/92be5c_',CHK={'8683': 'aef4055c02b3452ba99cb2b040b571c3~mv2.jpg', '8684': '1ededa61e0de4cbf9c86f8ff3d540546~mv2.png', '8803': '02da3f039bf5419f8d3a17623687b433~mv2.jpg', '8804': '180efc5915db44feb2bd64aaeae3a534~mv2.jpeg', '8805': '9989fe00fb8740c59749625873f279d7~mv2.jpg', '8827': 'cecd5f0db26c4be4b815e1d0389a0ad3~mv2.jpg', '8831': '4d36adc20fb3416c8b7bd04aae2a5230~mv2.jpg', '8833': '39c055de18aa4f95b089e74e97e5a72c~mv2.jpeg', '71000': 'd829e81e412c44149195e8818deb17a0~mv2.jpg', '71001': '71efcbda97914e0eafee71f5d8d2ce92~mv2.jpg', '71002': '11489ac6307845fab618727bb892231e~mv2.jpg', '71007': 'b08ed604f57143eaa8b57b54f06aeb19~mv2.jpg', '71008': 'b2576cdffc3d4aacac587090e2636492~mv2.jpg', '71010': '6bf9bd58ded44201993a8631326d11d9~mv2.jpeg', '71011': 'e830186f205b4f1da4261b88db2947d1~mv2.jpeg', '71013': 'ca699c7cfad34bfb98be67220bafa009~mv2.jpg', '71018': '9465b7d524ae4b84b4fbf79a6b1d21b7~mv2.png', '71021': '240383d8b5d04166a58c6565107acd90~mv2.jpeg', '71025': 'ea4ffaeb930248a886cbf6466f8ed205~mv2.jpg', '71027': '94dc875150294b69a1b2416b9ac9093c~mv2.jpg', '71029': '86c71064adb148a9b5dd67ad1bbf6742~mv2.jpg', '71032': 'c0aa7b3d9b364da090ed93c6eac18652~mv2.png', '71034': '6b50ddc87e1440bba3dac08cb9bccfd7~mv2.png', '71037': '251aa9b6140b4cbfb3eca7c2ad4aefc7~mv2.png', '71045': '582ce53de0154e02be58f78847a14171~mv2.png', '71046': 'b500b684d28b43bca5a0197eb51138a6~mv2.png', '71048': '40cd8c583d7a4e129eb3f27915ec9576~mv2.png', '71004': 'bb8bb7608ca14e76b0708ae33a7fb35a~mv2.jpeg', '71005': 'ad2122d6653641e7815e07df898f4baa~mv2.jpg', '71009': 'b74648bf2f6041f89d08dc004b3261f8~mv2.jpg', '71012': '0b63be2013d346829fba1189c8775a19~mv2.jpeg', '71024': '73228e9cfedd4a0a937a954b4105e24a~mv2.jpeg', '71017': '1560f9d359db4fc4bce820d6cba524ba~mv2.jpg', '71020': 'c6555164abf84136bf4373115c78b823~mv2.jpg', '71019': 'a14bf5f4965c48239069b2df3621d614~mv2.jpeg', '71022': 'b096263f670a436e9f5e9549c47e8f34~mv2.jpg', '71023': '0c5b9995df2846db8d8afaad5c7ddf10~mv2.jpg', '71028': '375a57038b4740d8a630599a24d0c021~mv2.png', '71030': '4c22262b07b5426199cbf001efd6b48a~mv2.jpg', '71031': '3cca91e8743f4724a67e16507d719b70~mv2.jpg', '71033': '0f3b864da7914ac0a10a652c7f78254f~mv2.jpg', '71038': '4ad2726706514250b10954eaeacd1a4f~mv2.png', '71039': '6e8ab0b8e55d4a30bb8d1782e842af1f~mv2.png', '71047': '237349a2a1d24474a517a91df02dfd09~mv2.jpg', '71014': '074aa109cea04f438da4cdf37b70a76b~mv2.jpg', '8909': '2de053c8948d4d7da770fe0959da569e~mv2.png'},SITE=[["Série 1", "aef4055c02b3452ba99cb2b040b571c3~mv2.jpg"], ["Série 2", "1ededa61e0de4cbf9c86f8ff3d540546~mv2.png"], ["Série 3", "02da3f039bf5419f8d3a17623687b433~mv2.jpg"], ["Série 4", "180efc5915db44feb2bd64aaeae3a534~mv2.jpeg"], ["Série 5", "9989fe00fb8740c59749625873f279d7~mv2.jpg"], ["Série 6", "cecd5f0db26c4be4b815e1d0389a0ad3~mv2.jpg"], ["Série 7", "4d36adc20fb3416c8b7bd04aae2a5230~mv2.jpg"], ["Série 8", "39c055de18aa4f95b089e74e97e5a72c~mv2.jpeg"], ["Série 9", "d829e81e412c44149195e8818deb17a0~mv2.jpg"], ["Série 10", "71efcbda97914e0eafee71f5d8d2ce92~mv2.jpg"], ["Série 11", "11489ac6307845fab618727bb892231e~mv2.jpg"], ["Série 12", "b08ed604f57143eaa8b57b54f06aeb19~mv2.jpg"], ["Série 13", "b2576cdffc3d4aacac587090e2636492~mv2.jpg"], ["Série 14", "6bf9bd58ded44201993a8631326d11d9~mv2.jpeg"], ["Série 15", "e830186f205b4f1da4261b88db2947d1~mv2.jpeg"], ["Série 16", "ca699c7cfad34bfb98be67220bafa009~mv2.jpg"], ["Série 17", "9465b7d524ae4b84b4fbf79a6b1d21b7~mv2.png"], ["Série 18", "240383d8b5d04166a58c6565107acd90~mv2.jpeg"], ["Série 19", "ea4ffaeb930248a886cbf6466f8ed205~mv2.jpg"], ["Série 20", "94dc875150294b69a1b2416b9ac9093c~mv2.jpg"], ["Série 21", "86c71064adb148a9b5dd67ad1bbf6742~mv2.jpg"], ["Série 22", "c0aa7b3d9b364da090ed93c6eac18652~mv2.png"], ["Série 23", "6b50ddc87e1440bba3dac08cb9bccfd7~mv2.png"], ["Série 24", "251aa9b6140b4cbfb3eca7c2ad4aefc7~mv2.png"], ["Série 25", "582ce53de0154e02be58f78847a14171~mv2.png"], ["Série 26", "b500b684d28b43bca5a0197eb51138a6~mv2.png"], ["Série 27", "40cd8c583d7a4e129eb3f27915ec9576~mv2.png"], ["The Lego Movie", "bb8bb7608ca14e76b0708ae33a7fb35a~mv2.jpeg"], ["The Lego Movie 2", "0c5b9995df2846db8d8afaad5c7ddf10~mv2.jpg"], ["Ninjago Movie – Série 1", "a14bf5f4965c48239069b2df3621d614~mv2.jpeg"], ["Unikitty", "34d10fc1d79c44d698e71349442cefa2~mv2.png"], ["Team GB Olympic", "2de053c8948d4d7da770fe0959da569e~mv2.png"], ["Simpsons – Série 1", "ad2122d6653641e7815e07df898f4baa~mv2.jpg"], ["Simpsons – Série 2", "b74648bf2f6041f89d08dc004b3261f8~mv2.jpg"], ["Disney – Série 1", "0b63be2013d346829fba1189c8775a19~mv2.jpeg"], ["Disney – Série 2", "73228e9cfedd4a0a937a954b4105e24a~mv2.jpeg"], ["Batman Movie – Série 1", "1560f9d359db4fc4bce820d6cba524ba~mv2.jpg"], ["Batman Movie – Série 2", "c6555164abf84136bf4373115c78b823~mv2.jpg"], ["Harry Potter e Fantastic Beasts", "b096263f670a436e9f5e9549c47e8f34~mv2.jpg"], ["Harry Potter – Série 2", "375a57038b4740d8a630599a24d0c021~mv2.png"], ["DFB (seleção alemã)", "074aa109cea04f438da4cdf37b70a76b~mv2.jpg"], ["DC Super Heroes", "f64015f0ca7a45c8b53327201a2f485a~mv2.jpeg"], ["VIDYO – Série 1", "257cd38fc400435793373c1173e1a73c~mv2.jpg"], ["VIDYO – Série 2", "4c5c583b39a34b6e891d59e889af2d91~mv2.png"], ["Looney Tunes", "4c22262b07b5426199cbf001efd6b48a~mv2.jpg"], ["Marvel – Série 1", "3cca91e8743f4724a67e16507d719b70~mv2.jpg"], ["Marvel – Série 2", "6e8ab0b8e55d4a30bb8d1782e842af1f~mv2.png"], ["Muppets", "0f3b864da7914ac0a10a652c7f78254f~mv2.jpg"], ["Super Mario – Série 1", "984945aa9fb54810a3449164d0b32f76~mv2.png"], ["Super Mario – Série 2", "64ab371725a34f0c9bc4da7d4db91182~mv2.jpg"], ["Super Mario – Série 3", "ff62ffb170194cac9faf36a99568f8b4~mv2.jpg"], ["Super Mario – Série 4", "da0e7d47e20b47b597986ce71a504334~mv2.jpg"], ["Super Mario – Série 5", "e7b5de68243545d6881dca92d85c76eb~mv2.jpg"], ["Dungeons & Dragons", "237349a2a1d24474a517a91df02dfd09~mv2.jpg"], ["Disney 100", "4ad2726706514250b10954eaeacd1a4f~mv2.png"], ["Fórmula 1", "a3174296115542acbae01c95da14639c~mv2.png"], ["Spider-Man Across the Spider-Verse", "20502568f7a54f74a3dade35b5491b92~mv2.png"]];
 const chkCache={};
-let rbShared='',db,items={},loaded=false,codes={'5702015594660':'71013'},logs=[],view='series',cur=null,q='';
+let rbShared='',db,items={},loaded=false,codes={'5702015594660':'71013'},logs=[],view='series',cur=null,q='',onlyFree=LS('free')=='1';
+let tt;function toast(m){let e=$('#toast');if(!e){e=document.createElement('div');e.id='toast';e.setAttribute('role','alert');document.body.appendChild(e)}e.textContent=m;e.style.display='block';clearTimeout(tt);tt=setTimeout(()=>e.style.display='none',3500);try{navigator.vibrate&&navigator.vibrate(60)}catch(_){}}
 const col=()=>db.collection('items');
 function start(){
   let c;try{c=JSON.parse(LS('fb'))}catch(e){}
@@ -58,20 +63,22 @@ function start(){
 }
 const stp=(id,f,v)=>`<div class=s><button data-a=st data-id="${id}" data-f=${f} data-d=-1>−</button><b>${v||0}</b><button data-a=st data-id="${id}" data-f=${f} data-d=1>+</button></div>`;
 const numOf=id=>{const m=String(id).match(/_\d+-(\d+)$/);return m?+m[1]:null};
-const row=(id,x,label)=>`<div class=r><img tabindex=0 data-z="${esc(id)}" src="${esc(x.img)}" loading=lazy onerror="this.style.visibility='hidden'"><div class=n>${esc(label||((x.t=='f'&&numOf(id)!=null?numOf(id)+'. ':'')+x.name))}<br><small>${esc(x.set)}</small></div>
+const dot=x=>(x.have>0&&(x.sell||0)>=x.have)?'<span class=dot role=img aria-label="Todas à venda" title="Todas à venda"></span>':'';
+const nm=(id,x,label)=>{const s=label||((x.t=='f'&&numOf(id)!=null?numOf(id)+'. ':'')+x.name);return x.t=='b'&&!s.startsWith('📦')?'📦 '+s:s};
+const row=(id,x,label)=>`<div class=r><img tabindex=0 data-z="${esc(id)}" src="${esc(x.img)}" loading=lazy onerror="this.style.visibility='hidden'"><div class=n>${esc(nm(id,x,label))}${dot(x)}<br><small>${esc(x.set)}</small></div>
 <div class=c><label>Tenho</label>${stp(id,'have',x.have)}</div><div class=c><label>Vender</label>${stp(id,'sell',x.sell)}</div>
 <div class=c><label>Compra €</label><input type=number step=0.01 inputmode=decimal value="${x.buy||0}" data-a=bu data-id="${id}"></div>
 <div class=c><label>Venda €</label><input type=number step=0.01 inputmode=decimal value="${x.price||0}" data-a=pr data-id="${id}"></div>
 <button class=x data-a=del data-id="${id}">✕</button></div>`;
-const figs=(f)=>Object.entries(items).filter(([i,x])=>x.t=='f'&&f(x)).sort((a,b)=>String(a[1].set).localeCompare(b[1].set,0,{numeric:true})||(numOf(a[0])??999)-(numOf(b[0])??999)||a[1].name.localeCompare(b[1].name));
+const figs=(f)=>Object.entries(items).filter(([i,x])=>(x.t=='f'||x.t=='b')&&f(x)).sort((a,b)=>String(a[1].set).localeCompare(b[1].set,0,{numeric:true})||(numOf(a[0])??999)-(numOf(b[0])??999)||a[1].name.localeCompare(b[1].name));
 function list(){
   const t=q.toLowerCase();
-  return figs(x=>!t||(x.name+' '+x.set).toLowerCase().includes(t)).slice(0,200).map(([i,x])=>row(i,x)).join('')||'<p>Nada encontrado.</p>';
+  return figs(x=>(!t||(x.name+' '+x.set).toLowerCase().includes(t))&&(!onlyFree||((x.have||0)>0&&!(x.sell>0)))).slice(0,200).map(([i,x])=>row(i,x)).join('')||'<p>Nada encontrado.</p>';
 }
 function page(){
   if(view=='login')return `<div class=box><h2>Entrar</h2><input id=em type=email placeholder="Email"><input id=pw type=password placeholder="Palavra-passe"><button class=p data-a=login>Entrar</button></div>`;
   const all=Object.entries(items);
-  if(view=='cfg')return `<div class=box><h2>Configuração <small>v20</small></h2>
+  if(view=='cfg')return `<div class=box><h2>Configuração <small>v21</small></h2>
   <small>Firebase: ligado automaticamente ✓</small><details><summary><small>Avançado: usar outra configuração Firebase</small></summary><textarea id=fb>${esc(LS('fb'))}</textarea></details>
   <small>Chave API Rebrickable</small><input id=rb value="${esc(LS('rb')||rbShared)}">
   <button class=p data-a=savecfg>Guardar</button><hr style="width:100%;border-color:#374151">
@@ -79,14 +86,14 @@ function page(){
   if(view=='series'){
     const S=all.filter(([i,x])=>x.t=='s').sort((a,b)=>String(a[1].set).localeCompare(b[1].set,0,{numeric:true}));
     return `<div class=bar><button class=p data-a=photo>📷 Foto ao código</button><button data-a=gallery>🖼 Galeria</button><button data-a=add>+ Série</button><button data-a=scan>Câmara ao vivo</button></div><div class=g>`+
-    (S.map(([i,x])=>{const n=all.filter(([j,y])=>y.t=='f'&&y.set==x.set).reduce((s,[j,y])=>s+(y.have||0),0);
-      return `<button class=card data-a=open data-set="${esc(x.set)}"><img src="${esc(x.img)}" onerror="this.style.visibility='hidden'"><b>${esc(x.name)}</b><small>${esc(x.set)} · completas ${x.have||0} · soltas ${n}</small></button>`}).join('')||(loaded?'<p>Sem séries. Carrega em + Série.</p>':'<p>A carregar…</p>'))+`</div>`;
+    (S.map(([i,x])=>{const n=all.filter(([j,y])=>y.t=='f'&&y.set==x.set).reduce((s,[j,y])=>s+(y.have||0),0),nb=all.filter(([j,y])=>y.t=='b'&&y.set==x.set).reduce((s,[j,y])=>s+(y.have||0),0);
+      return `<button class=card data-a=open data-set="${esc(x.set)}"><img src="${esc(x.img)}" onerror="this.style.visibility='hidden'"><b>${esc(x.name)}</b><small>${esc(x.set)} · completas ${x.have||0} · soltas ${n}${nb?' · caixas '+nb:''}</small></button>`}).join('')||(loaded?'<p>Sem séries. Carrega em + Série.</p>':'<p>A carregar…</p>'))+`</div>`;
   }
   if(view=='detail'){const s=items['S'+cur];if(!s)return`<div class=bar><button data-v=series>← Voltar</button></div><p>Série não encontrada.</p>`;
-    return `<div class=bar><button data-v=series>← Voltar</button><button data-a=manual>+ Minifigura manual</button><button data-a=chk>📋 Check list</button></div>`+row('S'+cur,s,s.name+' (série completa)')+figs(x=>x.set==cur).map(([i,x])=>row(i,x)).join('');}
+    return `<div class=bar><button data-v=series>← Voltar</button><button data-a=manual>+ Minifigura manual</button><button data-a=box>📦 + Caixa selada</button><button data-a=chk>📋 Check list</button></div>`+row('S'+cur,s,s.name+' (série completa)')+figs(x=>x.set==cur).map(([i,x])=>row(i,x)).join('');}
   if(view=='log'){const L={have:'Tenho',sell:'Vender',price:'Venda €',buy:'Compra €'};
     return logs.map(l=>`<div class=r><div class=n>${esc(l.n)}<br><small>${new Date(l.ts).toLocaleString('pt-PT')} · ${esc(l.u)}</small></div><b>${L[l.f]||l.f} ${l.f=='have'||l.f=='sell'?(l.d>0?'+':'')+l.d:'→ '+l.d}</b></div>`).join('')||'<p>Ainda sem histórico.</p>';}
-  if(view=='all')return `<div class=bar><input id=q placeholder="Pesquisar minifigura ou série" value="${esc(q)}"></div><div id=list>${list()}</div>`;
+  if(view=='all')return `<div class=bar><input id=q placeholder="Pesquisar minifigura ou série" value="${esc(q)}"></div><div class=bar><button class="sw${onlyFree?' on':''}" role=switch aria-checked="${onlyFree}" data-a=free><i></i><span>Só as que tenho e não tenho à venda</span><b>${onlyFree?'ON':'OFF'}</b></button></div><div id=list>${list()}</div>`;
   if(view=='sell'){const v=all.filter(([i,x])=>x.sell>0);const tot=v.reduce((s,[i,x])=>s+x.sell*(x.price||0),0);
     const lucro=v.reduce((s,[i,x])=>s+x.sell*((x.price||0)-(x.buy||0)),0);
     return `<div class=tot>Total à venda: ${tot.toFixed(2)} € · Lucro estimado: ${lucro.toFixed(2)} €</div>`+v.map(([i,x])=>row(i,x,x.t=='s'?x.name+' (série completa)':x.name)).join('')||'<p>Nada marcado para vender.</p>';}
@@ -99,7 +106,9 @@ function render(){
 }
 const who=()=>((firebase.auth().currentUser||{}).email||'?').split('@')[0];
 const log=(id,f,d)=>db.collection('log').add({u:who(),n:items[id].name,f,d,ts:Date.now()});
-const upd=(id,f,d)=>{const v=Math.max(0,(items[id][f]||0)+d);if(v==(items[id][f]||0))return;col().doc(id).update({[f]:v});log(id,f,v-(items[id][f]||0))};
+const upd=(id,f,d)=>{const x=items[id],cu=x[f]||0,v=Math.max(0,cu+d);if(v==cu)return;
+  if(f=='sell'&&d>0&&v>(x.have||0))return toast(`Só tens ${x.have||0} — não podes ter ${v} à venda.`);
+  if(f=='have'&&d<0&&v<(x.sell||0))return toast(`Tens ${x.sell} à venda — reduz primeiro as unidades à venda.`);col().doc(id).update({[f]:v});log(id,f,v-(items[id][f]||0))};
 async function addSeries(pre){
   const n=String(typeof pre=='string'?pre:(prompt('Número da série (ex: 71045)')||'')).trim().split('-')[0];if(!n)return;
   const key=LS('rb')||rbShared;if(!key)return alert('Põe a chave Rebrickable na Config.');
@@ -202,22 +211,26 @@ function manual(){
   const name=prompt('Nome da minifigura');if(!name)return;const img=prompt('URL da imagem (opcional)')||'';
   col().doc(`F${cur}_m${Date.now()}`).set({t:'f',set:cur,name,img,have:0,sell:0,price:0,buy:0});
 }
+function box(){
+  const s=items['S'+cur],name=prompt('Nome da caixa selada',`Caixa selada – ${s?s.name:cur}`);if(!name)return;
+  col().doc(`B${cur}_${Date.now()}`).set({t:'b',set:cur,name,img:(s&&s.img)||'',have:0,sell:0,price:0,buy:0});
+}
 function exp(){
-  const rows=Object.entries(items).map(([id,x])=>({id,Tipo:x.t=='s'?'Série completa':'Minifigura',Serie:x.set,Nome:x.name,Imagem:x.img,Tenho:x.have,Vender:x.sell,Preco:x.price,Compra:x.buy}));
+  const rows=Object.entries(items).map(([id,x])=>({id,Tipo:x.t=='s'?'Série completa':x.t=='b'?'Caixa selada':'Minifigura',Serie:x.set,Nome:x.name,Imagem:x.img,Tenho:x.have,Vender:x.sell,Preco:x.price,Compra:x.buy}));
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),'Stock');XLSX.writeFile(wb,'minifiguras.xlsx');
 }
 async function imp(f){
   const wb=XLSX.read(await f.arrayBuffer()),rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
   let b=db.batch(),n=0;
   for(const r of rows){if(!r.id)continue;
-    b.set(col().doc(String(r.id)),{t:r.Tipo=='Minifigura'?'f':'s',set:String(r.Serie),name:r.Nome||'',img:r.Imagem||'',have:+r.Tenho||0,sell:+r.Vender||0,price:+r.Preco||0,buy:+r.Compra||0});
+    b.set(col().doc(String(r.id)),{t:r.Tipo=='Minifigura'?'f':r.Tipo=='Caixa selada'?'b':'s',set:String(r.Serie),name:r.Nome||'',img:r.Imagem||'',have:+r.Tenho||0,sell:Math.min(+r.Vender||0,+r.Tenho||0),price:+r.Preco||0,buy:+r.Compra||0});
     if(++n%400==0){await b.commit();b=db.batch()}}
   await b.commit();alert(n+' linhas importadas');
 }
 const A={
   st:d=>upd(d.id,d.f,+d.d),
   open:d=>{cur=d.set;view='detail';render();scrollTo(0,0)},
-  pr:()=>{},bu:()=>{},photo:()=>$('#cap').click(),chk:chkDialog,gallery:()=>$('#gal2').click(),scan,add:addSeries,manual,exp,
+  pr:()=>{},bu:()=>{},photo:()=>$('#cap').click(),chk:chkDialog,gallery:()=>$('#gal2').click(),scan,add:addSeries,manual,box,exp,free:()=>{onlyFree=!onlyFree;localStorage.free=onlyFree?'1':'';render()},
   imp:()=>$('#file').click(),
   del:d=>{if(confirm('Apagar este item?'))col().doc(d.id).delete()},
   login:()=>firebase.auth().signInWithEmailAndPassword($('#em').value.trim(),$('#pw').value).catch(e=>alert(e.message)),
