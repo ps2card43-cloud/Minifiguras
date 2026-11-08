@@ -30,7 +30,7 @@ body.cfgbg{background:linear-gradient(rgba(17,24,39,.15),rgba(17,24,39,.3)),url(
 <nav><button data-v="series">Sets</button><button data-v="all">Unidade</button><button data-v="sell">Venda</button><button data-v="log">Histórico</button><button data-v="cfg">Config</button></nav>
 <div id="chkdlg" style="display:none;position:fixed;inset:0;height:100dvh;background:rgba(0,0,0,.85);z-index:11;align-items:center;justify-content:center;padding:16px"><div style="background:#1f2937;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;width:100%;max-width:420px"><b>Check list deste set</b><select id="chksel"></select><button id="chkuse" class="p">Usar a do site</button><button id="chkgal">Escolher imagem da galeria</button><button id="chkx">Cancelar</button></div></div>
 <div id="zoom" style="display:none;position:fixed;inset:0;height:100dvh;background:rgba(0,0,0,.9);z-index:10;align-items:center;justify-content:center"><img id="zi" style="max-width:96%;max-height:92%;object-fit:contain;background:#fff;border-radius:12px"></div>
-<div id="cam"><small style="position:absolute;top:6px;left:8px;color:#fff;z-index:2">v47</small><video id="vid" playsinline muted></video><div style="display:flex;gap:8px;padding:8px 8px calc(env(safe-area-inset-bottom,0px) + 28px);flex-wrap:wrap"><small style="flex:1 1 100%;color:#9ca3af">Afasta o telemóvel uns 20–25 cm e toca no vídeo para focar.</small><button id="picbtn" class="p" style="flex:1 1 100%">📸 Capturar código</button><button id="galbtn" style="flex:1 1 100%">🖼 Escolher foto da galeria</button><button id="typ" style="flex:1">⌨ Escrever</button><button id="stop" style="flex:1">Cancelar</button></div></div>
+<div id="cam"><small style="position:absolute;top:6px;left:8px;color:#fff;z-index:2">v48</small><video id="vid" playsinline muted></video><div style="display:flex;gap:8px;padding:8px 8px calc(env(safe-area-inset-bottom,0px) + 28px);flex-wrap:wrap"><small style="flex:1 1 100%;color:#9ca3af">Afasta o telemóvel uns 20–25 cm e toca no vídeo para focar.</small><button id="picbtn" class="p" style="flex:1 1 100%">📸 Capturar código</button><button id="galbtn" style="flex:1 1 100%">🖼 Escolher foto da galeria</button><button id="typ" style="flex:1">⌨ Escrever</button><button id="stop" style="flex:1">Cancelar</button></div></div>
 <input type="file" id="gal" accept="image/*" hidden>
 <input type="file" id="chkin" accept="image/*" hidden>
 <input type="file" id="cap" accept="image/*" capture="environment" hidden>
@@ -71,7 +71,7 @@ async function fillBuy(sets){
   return {n,miss};
 }
 let rbShared='',db,items={},loaded=false,codes={'5702015594660':'71013'},logs=[],view='series',cur=null,q='',onlyFree=LS('free')=='1';
-const VER='v47';
+const VER='v48';
 let onlyVer=LS('ver_lg')=='1',onlyNot=false,onlyNoPvp=false,onlyNoSale=false,minQ=0;
 let authed=null,sec=null,unsubI=null,unsubL=null,navSec=null;
 let tt;function toast(m,ok){let e=$('#toast');if(!e){e=document.createElement('div');e.id='toast';e.setAttribute('role','alert');document.body.appendChild(e)}e.textContent=m;e.style.background=ok?'#16a34a':'#ef4444';e.style.display='block';clearTimeout(tt);tt=setTimeout(()=>e.style.display='none',3500);try{navigator.vibrate&&navigator.vibrate(60)}catch(_){}}
@@ -317,15 +317,36 @@ async function setLoc(id,v){
     if(same.length>1)toast(`Caixa ${String(x.box).trim()} movida para "${v}" (${same.length} linhas).`,1);
   }catch(e){alert('Não consegui guardar: '+e.message)}
 }
+function parseCSV(t){
+  if(t.charCodeAt(0)==0xFEFF)t=t.slice(1);
+  const nl=t.indexOf('\n'),first=t.slice(0,nl>0?nl:t.length),sep=first.split(';').length>first.split(',').length?';':',';
+  const rows=[];let row=[],f='',q=false;
+  for(let i=0;i<t.length;i++){const c=t[i];
+    if(q){if(c=='"'){if(t[i+1]=='"'){f+='"';i++}else q=false}else f+=c}
+    else if(c=='"')q=true;
+    else if(c==sep){row.push(f);f=''}
+    else if(c=='\n'){row.push(f);rows.push(row);row=[];f=''}
+    else if(c!='\r')f+=c}
+  if(f!==''||row.length){row.push(f);rows.push(row)}
+  return rows;
+}
 function csvPrices(){
   const inp=document.createElement('input');inp.type='file';inp.accept='.csv,text/csv';
   inp.onchange=async()=>{const f=inp.files&&inp.files[0];if(!f)return;
     try{
-      const wb=XLSX.read(await f.text(),{type:'string'});
-      const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-      if(!rows.length||!('Set_ID' in rows[0])||!('USD_MSRP' in rows[0]))return alert('Este ficheiro não tem as colunas Set_ID e USD_MSRP.');
+      let heads,recs;
+      if(/\.xlsx?$/i.test(f.name)){
+        const wb=XLSX.read(await f.arrayBuffer());recs=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);heads=recs.length?Object.keys(recs[0]):[];
+      }else{
+        const t=parseCSV(await f.text());heads=(t[0]||[]).map(h=>h.trim());
+        const ix=n=>heads.findIndex(h=>h.toLowerCase()==n.toLowerCase());
+        const iI=ix('Set_ID'),iU=ix('USD_MSRP'),iC=ix('Current_Price');
+        recs=iI<0?[]:t.slice(1).map(r=>({Set_ID:r[iI],USD_MSRP:iU<0?0:r[iU],Current_Price:iC<0?0:r[iC]}));
+      }
+      if(!heads.some(h=>h.trim().toLowerCase()=='set_id')||!heads.some(h=>h.trim().toLowerCase()=='usd_msrp'))
+        return alert('Não encontrei as colunas Set_ID e USD_MSRP.\nColunas que vi no ficheiro: '+(heads.slice(0,8).join(', ')||'nenhuma')+'\n\nConfirma que escolheste o ficheiro sets.csv.');
       const m={};
-      rows.forEach(r=>{const u=+r.USD_MSRP||0,c=+r.Current_Price||0,p=u>0?u:(c>0?c:0);if(p)m[String(r.Set_ID).trim()]=p});
+      recs.forEach(r=>{const u=+r.USD_MSRP||0,c=+r.Current_Price||0,p=u>0?u:(c>0?c:0);if(p&&r.Set_ID)m[String(r.Set_ID).trim()]=p});
       const r0=prompt('Taxa de conversão de $ para € (ex: 0,92 → 100 $ = 92 €):',LS('usdeur')||'');if(r0===null)return;
       const rate=+String(r0).replace(',','.');if(!(rate>0))return alert('Taxa inválida.');
       localStorage.usdeur=String(r0);
