@@ -30,7 +30,7 @@ body.cfgbg{background:linear-gradient(rgba(17,24,39,.15),rgba(17,24,39,.3)),url(
 <nav><button data-v="series">Sets</button><button data-v="all">Unidade</button><button data-v="sell">Venda</button><button data-v="log">Histórico</button><button data-v="cfg">Config</button></nav>
 <div id="chkdlg" style="display:none;position:fixed;inset:0;height:100dvh;background:rgba(0,0,0,.85);z-index:11;align-items:center;justify-content:center;padding:16px"><div style="background:#1f2937;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;width:100%;max-width:420px"><b>Check list deste set</b><select id="chksel"></select><button id="chkuse" class="p">Usar a do site</button><button id="chkgal">Escolher imagem da galeria</button><button id="chkx">Cancelar</button></div></div>
 <div id="zoom" style="display:none;position:fixed;inset:0;height:100dvh;background:rgba(0,0,0,.9);z-index:10;align-items:center;justify-content:center"><img id="zi" style="max-width:96%;max-height:92%;object-fit:contain;background:#fff;border-radius:12px"></div>
-<div id="cam"><small style="position:absolute;top:6px;left:8px;color:#fff;z-index:2">v45</small><video id="vid" playsinline muted></video><div style="display:flex;gap:8px;padding:8px 8px calc(env(safe-area-inset-bottom,0px) + 28px);flex-wrap:wrap"><small style="flex:1 1 100%;color:#9ca3af">Afasta o telemóvel uns 20–25 cm e toca no vídeo para focar.</small><button id="picbtn" class="p" style="flex:1 1 100%">📸 Capturar código</button><button id="galbtn" style="flex:1 1 100%">🖼 Escolher foto da galeria</button><button id="typ" style="flex:1">⌨ Escrever</button><button id="stop" style="flex:1">Cancelar</button></div></div>
+<div id="cam"><small style="position:absolute;top:6px;left:8px;color:#fff;z-index:2">v46</small><video id="vid" playsinline muted></video><div style="display:flex;gap:8px;padding:8px 8px calc(env(safe-area-inset-bottom,0px) + 28px);flex-wrap:wrap"><small style="flex:1 1 100%;color:#9ca3af">Afasta o telemóvel uns 20–25 cm e toca no vídeo para focar.</small><button id="picbtn" class="p" style="flex:1 1 100%">📸 Capturar código</button><button id="galbtn" style="flex:1 1 100%">🖼 Escolher foto da galeria</button><button id="typ" style="flex:1">⌨ Escrever</button><button id="stop" style="flex:1">Cancelar</button></div></div>
 <input type="file" id="gal" accept="image/*" hidden>
 <input type="file" id="chkin" accept="image/*" hidden>
 <input type="file" id="cap" accept="image/*" capture="environment" hidden>
@@ -71,7 +71,7 @@ async function fillBuy(sets){
   return {n,miss};
 }
 let rbShared='',db,items={},loaded=false,codes={'5702015594660':'71013'},logs=[],view='series',cur=null,q='',onlyFree=LS('free')=='1';
-const VER='v45';
+const VER='v46';
 let onlyVer=LS('ver_lg')=='1',onlyNot=false,onlyNoPvp=false,onlyNoSale=false,minQ=0;
 let authed=null,sec=null,unsubI=null,unsubL=null,navSec=null;
 let tt;function toast(m,ok){let e=$('#toast');if(!e){e=document.createElement('div');e.id='toast';e.setAttribute('role','alert');document.body.appendChild(e)}e.textContent=m;e.style.background=ok?'#16a34a':'#ef4444';e.style.display='block';clearTimeout(tt);tt=setTimeout(()=>e.style.display='none',3500);try{navigator.vibrate&&navigator.vibrate(60)}catch(_){}}
@@ -193,10 +193,10 @@ async function addSeries(pre){
     const r=await fetch(`https://rebrickable.com/api/v3/lego/sets/?search=${n}&page_size=200`,{headers:{Authorization:'key '+key}});
     if(!r.ok)throw 0;
     const all=((await r.json()).results||[]).filter(x=>x.set_num.startsWith(n+'-'));
-    const bad=/series|complete|sealed|box|random|bag|display/i;
+    const bad=/\b(series|complete|sealed|box|random|bag|display)\b/i;
     const fg=all.filter(x=>!bad.test(x.name)),cov=all.find(x=>bad.test(x.name));
     if(!fg.length)throw 0;
-    const name=prompt('Nome do set',`Set ${n}`);if(!name)return;
+    const name=prompt('Nome do set',(items['S'+n]&&items['S'+n].name)||`Set ${n}`);if(!name)return;
     const img=(cov||fg[0]).set_img_url||'',yr=Math.min(...all.map(x=>x.year||9999).concat(9999))%9999||0,b=db.batch(),ids=new Set();
     items['S'+n]?b.update(col().doc('S'+n),{name,img,year:yr}):b.set(col().doc('S'+n),{t:'s',set:n,name,img,year:yr,have:0,sell:0,price:0,buy:0});
     fg.forEach(x=>{const id=`F${n}_${x.set_num}`;ids.add(id);
