@@ -30,7 +30,7 @@ body.cfgbg{background:linear-gradient(rgba(17,24,39,.15),rgba(17,24,39,.3)),url(
 <nav><button data-v="series">Sets</button><button data-v="all">Unidade</button><button data-v="sell">Venda</button><button data-v="log">Histórico</button><button data-v="cfg">Config</button></nav>
 <div id="chkdlg" style="display:none;position:fixed;inset:0;height:100dvh;background:rgba(0,0,0,.85);z-index:11;align-items:center;justify-content:center;padding:16px"><div style="background:#1f2937;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;width:100%;max-width:420px"><b>Check list deste set</b><select id="chksel"></select><button id="chkuse" class="p">Usar a do site</button><button id="chkgal">Escolher imagem da galeria</button><button id="chkx">Cancelar</button></div></div>
 <div id="zoom" style="display:none;position:fixed;inset:0;height:100dvh;background:rgba(0,0,0,.9);z-index:10;align-items:center;justify-content:center"><img id="zi" style="max-width:96%;max-height:92%;object-fit:contain;background:#fff;border-radius:12px"></div>
-<div id="cam"><small style="position:absolute;top:6px;left:8px;color:#fff;z-index:2">v41</small><video id="vid" playsinline muted></video><div style="display:flex;gap:8px;padding:8px 8px calc(env(safe-area-inset-bottom,0px) + 28px);flex-wrap:wrap"><small style="flex:1 1 100%;color:#9ca3af">Afasta o telemóvel uns 20–25 cm e toca no vídeo para focar.</small><button id="picbtn" class="p" style="flex:1 1 100%">📸 Capturar código</button><button id="galbtn" style="flex:1 1 100%">🖼 Escolher foto da galeria</button><button id="typ" style="flex:1">⌨ Escrever</button><button id="stop" style="flex:1">Cancelar</button></div></div>
+<div id="cam"><small style="position:absolute;top:6px;left:8px;color:#fff;z-index:2">v44</small><video id="vid" playsinline muted></video><div style="display:flex;gap:8px;padding:8px 8px calc(env(safe-area-inset-bottom,0px) + 28px);flex-wrap:wrap"><small style="flex:1 1 100%;color:#9ca3af">Afasta o telemóvel uns 20–25 cm e toca no vídeo para focar.</small><button id="picbtn" class="p" style="flex:1 1 100%">📸 Capturar código</button><button id="galbtn" style="flex:1 1 100%">🖼 Escolher foto da galeria</button><button id="typ" style="flex:1">⌨ Escrever</button><button id="stop" style="flex:1">Cancelar</button></div></div>
 <input type="file" id="gal" accept="image/*" hidden>
 <input type="file" id="chkin" accept="image/*" hidden>
 <input type="file" id="cap" accept="image/*" capture="environment" hidden>
@@ -71,8 +71,8 @@ async function fillBuy(sets){
   return {n,miss};
 }
 let rbShared='',db,items={},loaded=false,codes={'5702015594660':'71013'},logs=[],view='series',cur=null,q='',onlyFree=LS('free')=='1';
-const VER='v41';
-let onlyVer=LS('ver_lg')=='1',onlyNot=false,minQ=0;
+const VER='v44';
+let onlyVer=LS('ver_lg')=='1',onlyNot=false,onlyNoPvp=false,onlyNoSale=false,minQ=0;
 let authed=null,sec=null,unsubI=null,unsubL=null,navSec=null;
 let tt;function toast(m,ok){let e=$('#toast');if(!e){e=document.createElement('div');e.id='toast';e.setAttribute('role','alert');document.body.appendChild(e)}e.textContent=m;e.style.background=ok?'#16a34a':'#ef4444';e.style.display='block';clearTimeout(tt);tt=setTimeout(()=>e.style.display='none',3500);try{navigator.vibrate&&navigator.vibrate(60)}catch(_){}}
 const col=()=>db.collection(sec=='lg'?'lego':'items');
@@ -100,7 +100,7 @@ function watchData(){
 }
 function enter(s){
   unsubL&&unsubL();
-  sec=s;items=DATA[s];logs=[];loaded=ld[s];cur=null;q='';onlyFree=LS('free_'+s)=='1';onlyVer=s=='lg'&&LS('ver_lg')=='1';onlyNot=s=='lg'&&LS('not_lg')=='1';minQ=+LS('minq_'+s)||0;view=s=='lg'?'all':'series';render();scrollTo(0,0);
+  sec=s;items=DATA[s];logs=[];loaded=ld[s];cur=null;q='';onlyFree=LS('free_'+s)=='1';onlyVer=s=='lg'&&LS('ver_lg')=='1';onlyNot=s=='lg'&&LS('not_lg')=='1';minQ=+LS('minq_'+s)||0;onlyNoPvp=LS('nopvp_'+s)=='1';onlyNoSale=LS('nosale_'+s)=='1';view=s=='lg'?'all':'series';render();scrollTo(0,0);
   unsubL=db.collection(s=='lg'?'lego_log':'log').orderBy('ts','desc').limit(100).onSnapshot(sn=>{if(sec!=s)return;logs=sn.docs.map(d=>d.data());if(view=='log')render()});
 }
 function goHome(){unsubL&&unsubL();unsubL=null;sec=null;items={};logs=[];view='home';render();scrollTo(0,0)}
@@ -125,10 +125,10 @@ const row=(id,x,label)=>`<div class=r><img tabindex=0 data-z="${esc(id)}" src="$
 <div class=c><label>Venda €</label><input type=number step=0.01 inputmode=decimal value="${x.price||0}" data-a=pr data-id="${id}"></div>
 <button class=x data-a=del data-id="${id}">✕</button>${x.t=='l'?`<div style="flex:1 1 100%;display:flex;gap:8px;align-items:center"><label style="display:flex;align-items:center;gap:4px;font-size:12px;flex:none"><input type=checkbox data-a=ver data-id="${id}" ${x.ver?'checked':''} aria-label="Verificado" style="width:22px;height:22px;padding:0;flex:none">Verif.</label><input data-a=bx data-id="${id}" placeholder="Caixa" aria-label="Caixa" value="${esc(x.box||'')}" style="width:110px"><input data-a=lc data-id="${id}" placeholder="Local" aria-label="Local" value="${esc(x.loc||'')}" style="flex:1;min-width:0"></div>`:''}</div>`;
 const figs=(f)=>Object.entries(items).filter(([i,x])=>(sec=='lg'?x.t=='l':(x.t=='f'||x.t=='b'))&&f(x)).sort((a,b)=>String(a[1].set).localeCompare(b[1].set,0,{numeric:true})||(numOf(a[0])??999)-(numOf(b[0])??999)||a[1].name.localeCompare(b[1].name));
-function saveF(){localStorage['free_'+sec]=onlyFree?'1':'';localStorage['minq_'+sec]=minQ||'';if(sec=='lg'){localStorage['ver_lg']=onlyVer?'1':'';localStorage['not_lg']=onlyNot?'1':''}}
-function clearFilters(){onlyFree=false;onlyVer=false;onlyNot=false;minQ=0;saveF()}
-const nAct=()=>(onlyFree?1:0)+(sec=='lg'?(onlyVer?1:0)+(onlyNot?1:0):0)+(minQ>0?1:0);
-const flt=()=>{const t=q.toLowerCase();return figs(x=>(!t||[x.name,x.set,x.box,x.loc,x.theme].join(' ').toLowerCase().includes(t))&&(!onlyFree||((x.have||0)>0&&!(x.sell>0)))&&(sec!='lg'||!onlyVer||x.ver)&&(sec!='lg'||!onlyNot||!x.ver)&&(!minQ||(x.have||0)>=minQ))};
+function saveF(){localStorage['free_'+sec]=onlyFree?'1':'';localStorage['minq_'+sec]=minQ||'';localStorage['nopvp_'+sec]=onlyNoPvp?'1':'';localStorage['nosale_'+sec]=onlyNoSale?'1':'';if(sec=='lg'){localStorage['ver_lg']=onlyVer?'1':'';localStorage['not_lg']=onlyNot?'1':''}}
+function clearFilters(){onlyNoSale=false;onlyNoPvp=false;onlyFree=false;onlyVer=false;onlyNot=false;minQ=0;saveF()}
+const nAct=()=>(onlyFree?1:0)+(onlyNoPvp?1:0)+(onlyNoSale?1:0)+(sec=='lg'?(onlyVer?1:0)+(onlyNot?1:0):0)+(minQ>0?1:0);
+const flt=()=>{const t=q.toLowerCase();return figs(x=>(!t||[x.name,x.set,x.box,x.loc,x.theme].join(' ').toLowerCase().includes(t))&&(!onlyFree||((x.have||0)>0&&!(x.sell>0)))&&(sec!='lg'||!onlyVer||x.ver)&&(sec!='lg'||!onlyNot||!x.ver)&&(!minQ||(x.have||0)>=minQ)&&(!onlyNoPvp||!(x.buy>0))&&(!onlyNoSale||!(x.sell>0)))};
 function list(){
   const lim=sec=='lg'?400:200,arr=flt();
   return arr.slice(0,lim).map(([i,x])=>row(i,x)).join('')+(arr.length>lim?`<p><small>A mostrar ${lim} de ${arr.length}. Usa a pesquisa para filtrar.</small></p>`:'')||(loaded?(nAct()&&!q?'<p>Nada para mostrar com os filtros activos. Abre os Filtros e limpa-os para ver tudo.</p>':sec=='lg'&&!q?'<p>Sem sets Lego. Carrega em + Set Lego.</p>':'<p>Nada encontrado.</p>'):'<p>A carregar…</p>');
@@ -159,6 +159,8 @@ function page(){
     return `<div class=bar><button data-a=fback>← Voltar</button><button data-a=fclear>Limpar filtros</button></div><h2 style="margin:4px 0 12px">Filtros</h2>`
       +sw(onlyFree,'free',`Só ${lg?'os':'as'} que tenho e não tenho à venda`)
       +(lg?sw(onlyVer,'fver','Só os que já verifiquei')+sw(onlyNot,'fnot','Só os que ainda não verifiquei'):'')
+      +sw(onlyNoSale,'fnosale','Só os que não tenho à venda')
+      +sw(onlyNoPvp,'fnopvp','Só os sem preço de compra')
       +`<div class=bar style="align-items:center;justify-content:space-between"><div>Quantidade mínima (Tenho)<br><small>${minQ?minQ+' ou mais unidades':'0 = sem filtro'}</small></div><div class=s><button data-a=fq data-d=-1>−</button><b>${minQ}</b><button data-a=fq data-d=1>+</button></div></div>`
       +`<p style="opacity:.8">${n} resultado${n==1?'':'s'}</p><div class=bar><button class=p data-a=fback>Ver resultados</button></div>`}
   if(view=='all')return (sec=='lg'?LGTOP(all):'')+`<div class=bar><input id=q placeholder="${sec=='lg'?'Pesquisar set Lego':'Pesquisar minifigura ou set'}" value="${esc(q)}"><button data-a=filt style="flex:none">⚙ Filtros${nAct()?' ('+nAct()+')':''}</button></div><div id=list>${list()}</div>`;
@@ -350,7 +352,7 @@ async function imp(f){
 }
 const A={
   st:d=>upd(d.id,d.f,+d.d),
-  enter:d=>enter(d.s),home:goHome,addlego:addLego,boxchk:boxCheck,filt:()=>{view='filt';render();scrollTo(0,0)},fback:()=>{view='all';render();scrollTo(0,0)},fclear:()=>{clearFilters();render()},fver:()=>{onlyVer=!onlyVer;if(onlyVer)onlyNot=false;saveF();render()},fnot:()=>{onlyNot=!onlyNot;if(onlyNot)onlyVer=false;saveF();render()},fq:d=>{minQ=Math.max(0,minQ+(+d.d));saveF();render()},
+  enter:d=>enter(d.s),home:goHome,addlego:addLego,boxchk:boxCheck,filt:()=>{view='filt';render();scrollTo(0,0)},fback:()=>{view='all';render();scrollTo(0,0)},fclear:()=>{clearFilters();render()},fver:()=>{onlyVer=!onlyVer;if(onlyVer)onlyNot=false;saveF();render()},fnot:()=>{onlyNot=!onlyNot;if(onlyNot)onlyVer=false;saveF();render()},fnosale:()=>{onlyNoSale=!onlyNoSale;saveF();render()},fnopvp:()=>{onlyNoPvp=!onlyNoPvp;saveF();render()},fq:d=>{minQ=Math.max(0,minQ+(+d.d));saveF();render()},
   open:d=>{cur=d.set;view='detail';render();scrollTo(0,0)},
   pr:()=>{},bu:()=>{},photo:()=>$('#cap').click(),chk:chkDialog,gallery:()=>$('#gal2').click(),scan,add:addSeries,manual,box,exp,
   base:async()=>{const cu=baseOf(cur),v=prompt('Preço base por saco (€) deste set.\nVai para o "Compra €" das minifiguras que ainda têm 0:',cu||'');if(v===null)return;
